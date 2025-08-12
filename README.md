@@ -103,29 +103,4 @@ Tất cả các yêu cầu từ Client (Web, Mobile) đều đi qua một API Ga
     ```
     Ứng dụng React sẽ chạy trên `http://localhost:3000`.
 
-## 📁 Cấu trúc thư mục
 
-Dự án được tổ chức theo kiến trúc monorepo (hoặc có thể là multi-repo), với mỗi service nằm trong một thư mục riêng.
-
-```
-/
-├── api-gateway/          # Cấu hình API Gateway
-├── consulting-service/   # Service quản lý tư vấn
-├── course-service/       # Service quản lý khóa học
-├── enterprise-service/   # Service quản lý doanh nghiệp
-├── user-service/         # Service quản lý người dùng
-├── frontend/             # Ứng dụng React.JS
-└── docker-compose.yml    # File cấu hình để chạy toàn bộ hệ thống với Docker
-```
-
-## 🤝 Đóng góp
-
-Chúng tôi luôn chào đón các đóng góp để cải thiện hệ thống. Vui lòng tuân thủ các quy tắc sau:
-
-1.  **Fork** repository này.
-2.  Tạo một **branch** mới cho tính năng của bạn (`git checkout -b feature/AmazingFeature`).
-3.  **Commit** các thay đổi của bạn (`git commit -m 'Add some AmazingFeature'`).
-4.  **Push** lên branch (`git push origin feature/AmazingFeature`).
-5.  Mở một **Pull Request**.
-
-Vui lòng đảm bảo rằng code của bạn tuân thủ coding style của dự án và đã được test kỹ lưỡng.
