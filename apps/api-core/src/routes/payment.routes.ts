@@ -3,7 +3,7 @@ import { PaymentController } from '@/controllers/payment.controller';
 import { authenticate, authorize } from '@/middleware/auth';
 import { createRateLimit } from '@/middleware/rateLimit';
 import { validateContentType } from '@/middleware/validation';
-import { UserRole, PaymentStatus } from '@prisma/client';
+import { UserRole, PaymentStatus } from '@/constants/enums';
 
 const router = Router();
 

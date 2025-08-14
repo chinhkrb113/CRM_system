@@ -3,7 +3,7 @@ import { LeadController } from '@/controllers/lead.controller';
 import { authenticate, authorize } from '@/middleware/auth';
 import { createRateLimit } from '@/middleware/rateLimit';
 import { validateContentType } from '@/middleware/validation';
-import { UserRole, LeadStatus, LeadSource } from '@prisma/client';
+import { UserRole, LeadStatus, LeadSource } from '@/constants/enums';
 
 const router = Router();
 

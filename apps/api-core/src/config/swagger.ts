@@ -18,7 +18,7 @@ const swaggerOptions = {
     },
     servers: [
       {
-        url: 'http://localhost:3002',
+        url: 'http://localhost:3001',
         description: 'Development server',
       },
     ],
@@ -106,14 +106,14 @@ export const setupSwagger = (app: Express): void => {
   });
 
   console.log('\n=== 📚 SWAGGER DOCUMENTATION ===');
-  console.log('🔗 Swagger UI: http://localhost:3002/api/docs');
-  console.log('📄 Swagger JSON: http://localhost:3002/api/docs.json');
+  console.log('🔗 Swagger UI: http://localhost:3001/api/docs');
+  console.log('📄 Swagger JSON: http://localhost:3001/api/docs.json');
   console.log('\n=== 🧪 TEST CREDENTIALS ===');
   console.log('👤 Test User: admin@crm.com');
   console.log('🔑 Test Password: password123');
   console.log('\n=== 🚀 API ENDPOINTS ===');
-  console.log('🏥 Health Check: http://localhost:3002/api/core/health');
-  console.log('🔐 Login: POST http://localhost:3002/api/core/auth/login');
+  console.log('🏥 Health Check: http://localhost:3001/api/core/health');
+  console.log('🔐 Login: POST http://localhost:3001/api/core/auth/login');
   console.log('================================\n');
 };
 

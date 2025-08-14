@@ -1,6 +1,6 @@
 import dotenv from 'dotenv';
 import { startServer } from './app';
-import { logger } from '@/middleware/logging';
+import { logger } from './middleware/logging';
 
 // Load environment variables
 dotenv.config();

@@ -3,7 +3,7 @@ import { AppointmentController } from '@/controllers/appointment.controller';
 import { authenticate, authorize } from '@/middleware/auth';
 import { createRateLimit } from '@/middleware/rateLimit';
 import { validateContentType } from '@/middleware/validation';
-import { UserRole, AppointmentStatus } from '@prisma/client';
+import { UserRole, AppointmentStatus } from '@/constants/enums';
 
 const router = Router();
 

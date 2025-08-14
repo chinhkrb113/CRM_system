@@ -3,7 +3,7 @@ import { InteractionController } from '@/controllers/interaction.controller';
 import { authenticate, authorize } from '@/middleware/auth';
 import { createRateLimit } from '@/middleware/rateLimit';
 import { validateContentType } from '@/middleware/validation';
-import { UserRole, InteractionType } from '@prisma/client';
+import { UserRole, InteractionType } from '@/constants/enums';
 
 const router = Router();
 

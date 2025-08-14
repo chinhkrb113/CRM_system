@@ -3,7 +3,7 @@ import { UserController } from '@/controllers/user.controller';
 import { authenticate, authorize } from '@/middleware/auth';
 import { createRateLimit } from '@/middleware/rateLimit';
 import { validateContentType } from '@/middleware/validation';
-import { UserRole } from '@prisma/client';
+import { UserRole } from '@/constants/enums';
 
 const router = Router();
 

@@ -8,7 +8,7 @@ info:
     email: backend@crm.com
 
 servers:
-  - url: http://localhost:3002
+  - url: http://localhost:3001
     description: Development server
   - url: https://api.crm.com
     description: Production server
