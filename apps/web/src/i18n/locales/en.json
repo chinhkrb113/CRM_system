@@ -1,0 +1,190 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "refresh": "Refresh",
+    "close": "Close",
+    "confirm": "Confirm",
+    "yes": "Yes",
+    "no": "No",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "reset": "Reset",
+    "clear": "Clear"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember me",
+    "signIn": "Sign in",
+    "signUp": "Sign up",
+    "welcome": "Welcome back",
+    "signInToAccount": "Sign in to your Rockket App account",
+    "invalidCredentials": "Invalid email or password. Please try again.",
+    "demoCredentials": "Demo Credentials:"
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "leads": "Leads",
+    "appointments": "Appointments",
+    "teams": "Teams",
+    "tasks": "Tasks",
+    "jobs": "Jobs",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "home": "Home"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Welcome back! Here's an overview of your business metrics.",
+    "totalLeads": "Total Leads",
+    "appointments": "Appointments",
+    "activeTasks": "Active Tasks",
+    "conversionRate": "Conversion Rate",
+    "recentActivity": "Recent Activity",
+    "recentActivitySubtitle": "Latest updates from your team and leads.",
+    "quickActions": "Quick Actions",
+    "quickActionsSubtitle": "Common tasks and shortcuts.",
+    "addNewLead": "Add New Lead",
+    "scheduleAppointment": "Schedule Appointment",
+    "createTask": "Create Task",
+    "generateReport": "Generate Report"
+  },
+  "leads": {
+    "title": "Leads",
+    "subtitle": "Manage your leads and track their progress.",
+    "addLead": "Add Lead",
+    "leadDetails": "Lead Details",
+    "status": "Status",
+    "source": "Source",
+    "assignedTo": "Assigned To",
+    "createdAt": "Created At",
+    "lastContact": "Last Contact"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "subtitle": "Schedule and manage your appointments.",
+    "scheduleNew": "Schedule New",
+    "upcoming": "Upcoming",
+    "past": "Past",
+    "today": "Today",
+    "thisWeek": "This Week",
+    "nextWeek": "Next Week"
+  },
+  "teams": {
+    "title": "Teams",
+    "subtitle": "Manage your team members and their roles.",
+    "addMember": "Add Member",
+    "role": "Role",
+    "department": "Department",
+    "joinedAt": "Joined At",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "subtitle": "Track and manage your tasks and submissions.",
+    "createTask": "Create Task",
+    "assignTask": "Assign Task",
+    "priority": "Priority",
+    "dueDate": "Due Date",
+    "completed": "Completed",
+    "inProgress": "In Progress",
+    "pending": "Pending",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "jobs": {
+    "title": "Jobs & Matching",
+    "subtitle": "Manage job postings and candidate matching.",
+    "postJob": "Post Job",
+    "jobTitle": "Job Title",
+    "company": "Company",
+    "location": "Location",
+    "salary": "Salary",
+    "jobType": "Job Type",
+    "fullTime": "Full Time",
+    "partTime": "Part Time",
+    "contract": "Contract",
+    "remote": "Remote"
+  },
+  "analytics": {
+    "title": "Analytics",
+    "subtitle": "View detailed analytics and reports.",
+    "overview": "Overview",
+    "performance": "Performance",
+    "trends": "Trends",
+    "reports": "Reports"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your account settings and preferences"
+  },
+  "appointments": {
+    "title": "Appointments",
+    "description": "Manage and schedule appointments with leads and clients",
+    "calendar": "Calendar",
+    "filters": "Filters",
+    "create": "New Appointment",
+    "edit": "Edit Appointment",
+    "delete": "Delete Appointment",
+    "import": "Import",
+    "export": "Export",
+    "today": "Today",
+    "noAppointments": "No appointments found",
+    "onlineMeeting": "Online Meeting",
+    "calendarViewComingSoon": "Calendar view coming soon",
+    "searchPlaceholder": "Search appointments, leads, or notes...",
+    "view": {
+      "month": "Month",
+      "week": "Week",
+      "day": "Day",
+      "list": "List"
+    },
+    "status": {
+      "label": "Status",
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed",
+      "in-progress": "In Progress",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no-show": "No Show"
+    },
+    "type": {
+      "label": "Type",
+      "consultation": "Consultation",
+      "interview": "Interview",
+      "meeting": "Meeting",
+      "follow-up": "Follow-up",
+      "presentation": "Presentation",
+      "other": "Other"
+    },
+    "dateRange": {
+      "label": "Date Range",
+      "start": "Start Date",
+      "end": "End Date"
+    },
+    "stats": {
+      "total": "Total Appointments",
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "upcomingToday": "Today",
+      "upcomingWeek": "This Week"
+    }
+  }
+}

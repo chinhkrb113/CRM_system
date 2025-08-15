@@ -78,7 +78,7 @@ process.on('SIGTERM', async () => {
 });
 
 app.listen(port, () => {
-  console.log(`🚀 Learning API server running on port ${port}`);
+  console.log(`🚀 Learning API server running on port: http://localhost:${port}/api-docs `);
 });
 
 export default app;

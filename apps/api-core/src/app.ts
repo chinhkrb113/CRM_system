@@ -2,14 +2,14 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import compression from 'compression';
-import { apiRoutes } from '@/routes';
-import { errorHandler, notFoundHandler, requestTimeout } from '@/middleware/error';
-import { requestLogger, performanceLogger } from '@/middleware/logging';
-import { validateRequestSize } from '@/middleware/validation';
-import { rateLimit, rateLimitConfigs } from '@/middleware/rateLimit';
-import { setupProcessErrorHandlers } from '@/middleware/error';
-import { logger } from '@/middleware/logging';
-import { setupSwagger } from '@/config/swagger';
+import { apiRoutes } from './routes/index';
+import { errorHandler, notFoundHandler, requestTimeout } from './middleware/error';
+import { requestLogger, performanceLogger } from './middleware/logging';
+import { validateRequestSize } from './middleware/validation';
+import { rateLimit, rateLimitConfigs } from './middleware/rateLimit';
+import { setupProcessErrorHandlers } from './middleware/error';
+import { logger } from './middleware/logging';
+import { setupSwagger } from './config/swagger';
 
 /**
  * Create Express application
@@ -37,7 +37,7 @@ export function createApp() {
 
   // CORS configuration
   app.use(cors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3002'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3001'],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

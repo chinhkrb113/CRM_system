@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { UserRole, LeadStatus, LeadSource, InteractionType, AppointmentStatus, PaymentStatus } from '@prisma/client';
+import { UserRole, LeadStatus, LeadSource, InteractionType, AppointmentStatus, PaymentStatus } from '@/constants/enums';
 
 // Common schemas
 const uuidSchema = Joi.string().uuid({ version: 'uuidv4' });
