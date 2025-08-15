@@ -37,7 +37,7 @@ export interface LeadWithRelations extends Lead {
     id: string;
     amount: Decimal;
     currency: string;
-    status: PaymentStatus;
+    status: string;
     createdAt: Date;
   }[];
 }
@@ -214,11 +214,11 @@ export class LeadService {
       // Search filter
       if (search) {
         where.OR = [
-          { firstName: { contains: search, mode: 'insensitive' } },
-          { lastName: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { company: { contains: search, mode: 'insensitive' } },
-          { phone: { contains: search, mode: 'insensitive' } },
+          { firstName: { contains: search } },
+          { lastName: { contains: search } },
+          { email: { contains: search } },
+          { company: { contains: search } },
+          { phone: { contains: search } },
         ];
       }
 
@@ -540,16 +540,12 @@ export class LeadService {
         throw new ForbiddenError('Only administrators can delete leads');
       }
 
-      // Soft delete by updating status
-      await prisma.lead.update({
+      // Hard delete - permanently remove from database
+      await prisma.lead.delete({
         where: { id: leadId },
-        data: {
-          status: LeadStatus.CLOSED_LOST,
-          notes: `Lead deleted by admin on ${new Date().toISOString()}`,
-        },
       });
 
-      logger.info('Lead deleted successfully', {
+      logger.info('Lead permanently deleted from database', {
         leadId,
         deletedBy,
       });
@@ -601,6 +597,107 @@ export class LeadService {
   }
 
   /**
+   * Update lead status
+   */
+  static async updateLeadStatus(
+    leadId: string,
+    status: LeadStatus,
+    updatedBy: string,
+    userRole: UserRole
+  ): Promise<LeadWithRelations> {
+    try {
+      // Check if lead exists and user has permission
+      const existingLead = await prisma.lead.findUnique({
+        where: { id: leadId },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+      });
+
+      if (!existingLead) {
+        throw new NotFoundError('Lead not found');
+      }
+
+      // Check permissions
+      if (userRole === UserRole.SALES && existingLead.ownerId !== updatedBy) {
+        throw new ForbiddenError('You can only update leads assigned to you');
+      }
+
+      const lead = await prisma.lead.update({
+        where: { id: leadId },
+        data: { 
+          status,
+          updatedAt: new Date(),
+        },
+        include: {
+          owner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+          interactions: {
+            select: {
+              id: true,
+              type: true,
+              subject: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
+          appointments: {
+            select: {
+              id: true,
+              title: true,
+              scheduledAt: true,
+              status: true,
+            },
+            orderBy: { scheduledAt: 'desc' },
+            take: 5,
+          },
+          payments: {
+            select: {
+              id: true,
+              amount: true,
+              currency: true,
+              status: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 5,
+          },
+        },
+      });
+
+      logger.info('Lead status updated', {
+        leadId,
+        status,
+        updatedBy,
+      });
+
+      return lead;
+    } catch (error) {
+      logger.error('Update lead status error', {
+        error: error instanceof Error ? error.message : String(error),
+        leadId,
+        status,
+        updatedBy,
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Get lead statistics
    */
   static async getLeadStats(
@@ -608,8 +705,8 @@ export class LeadService {
     userRole: UserRole
   ): Promise<{
     total: number;
-    byStatus: Record<LeadStatus, number>;
-    bySource: Record<LeadSource, number>;
+    byStatus: Record<string, number>;
+    bySource: Record<string, number>;
     recentlyCreated: number;
     averageScore: number;
   }> {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -18,6 +18,7 @@ type LoginForm = z.infer<typeof loginSchema>
 export function Login() {
   const [showPassword, setShowPassword] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { login, isLoading } = useAuthStore()
 
   const {
@@ -31,9 +32,20 @@ export function Login() {
 
   const onSubmit = async (data: LoginForm) => {
     try {
+      console.log('🚀 Starting login process...')
       await login(data.email, data.password)
-      navigate('/dashboard')
+      
+      console.log('✅ Login successful, checking auth state...')
+      console.log('Auth state:', { isAuthenticated: useAuthStore.getState().isAuthenticated })
+      
+      // Get the intended destination from location state or default to dashboard
+      const from = location.state?.from?.pathname || '/dashboard'
+      console.log('🔄 Navigating to:', from)
+      
+      // Navigate to the intended page or dashboard
+      navigate(from, { replace: true })
     } catch (error) {
+      console.error('❌ Login failed:', error)
       setError('root', {
         message: 'Invalid email or password. Please try again.',
       })
@@ -128,7 +140,7 @@ export function Login() {
               Demo Credentials:
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
-              Email: admin@rockket.com
+              Email: admin@crm.com
             </p>
             <p className="text-xs text-gray-600 dark:text-gray-400">
               Password: password123

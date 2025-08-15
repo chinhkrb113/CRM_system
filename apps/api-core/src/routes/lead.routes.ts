@@ -452,6 +452,64 @@ router.patch('/:id',
 /**
  * @swagger
  * /api/core/leads/{id}:
+ *   put:
+ *     tags:
+ *       - Leads
+ *     summary: Update lead (PUT method)
+ *     description: Update a lead using PUT method (same as PATCH)
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstName:
+ *                 type: string
+ *               lastName:
+ *                 type: string
+ *               email:
+ *                 type: string
+ *               phone:
+ *                 type: string
+ *               company:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [NEW, CONTACTED, QUALIFIED, CONVERTED, LOST]
+ *               source:
+ *                 type: string
+ *                 enum: [WEBSITE, SOCIAL_MEDIA, EMAIL, PHONE, REFERRAL, OTHER]
+ *               notes:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Lead updated successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Lead not found
+ */
+router.put('/:id',
+  generalRateLimit,
+  validateContentType(['application/json']),
+  LeadController.updateLeadPut
+);
+
+/**
+ * @swagger
+ * /api/core/leads/{id}:
  *   delete:
  *     tags:
  *       - Leads
@@ -561,6 +619,66 @@ router.post('/:id/score',
   generalRateLimit,
   validateContentType(['application/json']),
   LeadController.updateLeadScore
+);
+
+/**
+ * @swagger
+ * /api/core/leads/{id}/status:
+ *   put:
+ *     tags:
+ *       - Leads
+ *     summary: Update lead status
+ *     description: Update the status of a specific lead
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Lead ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - status
+ *             properties:
+ *               status:
+ *                 type: string
+ *                 enum: [NEW, CONTACTED, QUALIFIED, CONVERTED, LOST, PROPOSAL_SENT, NEGOTIATION, CLOSED_WON, CLOSED_LOST]
+ *                 description: New status for the lead
+ *     responses:
+ *       200:
+ *         description: Lead status updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   description: Updated lead object
+ *                 message:
+ *                   type: string
+ *                   example: Lead status updated successfully
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Lead not found
+ */
+router.put('/:id/status',
+  generalRateLimit,
+  validateContentType(['application/json']),
+  LeadController.updateLeadStatus
 );
 
 /**

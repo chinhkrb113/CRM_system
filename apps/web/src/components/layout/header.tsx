@@ -20,9 +20,15 @@ export function Header({ className }: HeaderProps) {
   const [showNotifications, setShowNotifications] = useState(false)
   const [showUserMenu, setShowUserMenu] = useState(false)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleLogout = async () => {
+    try {
+      await logout()
+      navigate('/login')
+    } catch (error) {
+      console.error('Logout failed:', error)
+      // Navigate anyway to ensure user is logged out locally
+      navigate('/login')
+    }
   }
 
   const toggleLanguage = () => {
@@ -121,7 +127,7 @@ export function Header({ className }: HeaderProps) {
         {user && (
           <div className="hidden md:flex items-center space-x-2 text-sm select-none">
             <span className="text-muted-foreground">{t('common.welcome', 'Welcome,')}</span>
-            <span className="font-medium">{user.name}</span>
+            <span className="font-medium">{user.firstName} {user.lastName}</span>
           </div>
         )}
 

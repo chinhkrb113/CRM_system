@@ -12,23 +12,32 @@ export interface JWTPayload {
 // Mock JWT functions for demo purposes
 export const jwt = {
   /**
-   * Decode a JWT token (mock implementation)
+   * Decode a JWT token (simplified implementation)
    * In a real app, use a proper JWT library
    */
   decode(token: string): JWTPayload | null {
     try {
-      // This is a mock implementation
-      // In a real app, you would properly decode the JWT
-      if (token === 'mock-jwt-token-12345') {
-        return {
-          sub: '1',
-          email: 'admin@rockket.com',
-          role: 'admin',
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour from now
-        }
+      // Simple JWT decode without verification (for demo purposes)
+      // In production, use a proper JWT library with signature verification
+      if (!token || token === 'null' || token === 'undefined') {
+        return null
       }
-      return null
+      
+      const parts = token.split('.')
+      if (parts.length !== 3) {
+        return null
+      }
+      
+      const payload = JSON.parse(atob(parts[1]))
+      
+      // Map backend JWT structure to our interface
+      return {
+        sub: payload.id || payload.sub,
+        email: payload.email,
+        role: payload.role,
+        iat: payload.iat,
+        exp: payload.exp,
+      }
     } catch {
       return null
     }

@@ -1,229 +1,481 @@
-import type { Lead, LeadFilters, LeadFormData, LeadSource, LeadStatus, LeadPriority } from '@/types/lead'
+// API service for leads management - integrated with api-core
 
-// Mock data
-const mockLeads: Lead[] = [
-  {
-    id: '1',
-    name: 'John Smith',
-    email: 'john.smith@example.com',
-    phone: '+1-555-0123',
-    company: 'Tech Corp',
-    position: 'CTO',
-    source: 'website',
-    status: 'qualified',
-    priority: 'high',
-    assignedTo: 'user1',
-    notes: 'Interested in enterprise solution',
-    tags: ['enterprise', 'tech'],
-    createdAt: '2024-01-15T10:00:00Z',
-    updatedAt: '2024-01-20T14:30:00Z',
-    lastContactDate: '2024-01-20T14:30:00Z',
-    nextFollowUpDate: '2024-01-25T09:00:00Z',
-    estimatedValue: 50000,
-    probability: 75
-  },
-  {
-    id: '2',
-    name: 'Sarah Johnson',
-    email: 'sarah.j@startup.io',
-    phone: '+1-555-0124',
-    company: 'StartupIO',
-    position: 'Founder',
-    source: 'referral',
-    status: 'new',
-    priority: 'medium',
-    assignedTo: 'user2',
-    notes: 'Referred by existing client',
-    tags: ['startup', 'referral'],
-    createdAt: '2024-01-18T11:00:00Z',
-    updatedAt: '2024-01-18T11:00:00Z',
-    nextFollowUpDate: '2024-01-22T10:00:00Z',
-    estimatedValue: 25000,
-    probability: 50
-  },
-  {
-    id: '3',
-    name: 'Michael Brown',
-    email: 'mbrown@bigcorp.com',
-    phone: '+1-555-0125',
-    company: 'BigCorp Inc',
-    position: 'VP Sales',
-    source: 'cold_call',
-    status: 'contacted',
-    priority: 'low',
-    assignedTo: 'user1',
-    notes: 'Initial contact made, needs follow-up',
-    tags: ['enterprise', 'sales'],
-    createdAt: '2024-01-10T09:00:00Z',
-    updatedAt: '2024-01-16T16:00:00Z',
-    lastContactDate: '2024-01-16T16:00:00Z',
-    nextFollowUpDate: '2024-01-23T14:00:00Z',
-    estimatedValue: 75000,
-    probability: 30
-  },
-  {
-    id: '4',
-    name: 'Emily Davis',
-    email: 'emily.davis@consulting.com',
-    phone: '+1-555-0126',
-    company: 'Davis Consulting',
-    position: 'Managing Director',
-    source: 'social_media',
-    status: 'proposal',
-    priority: 'urgent',
-    assignedTo: 'user2',
-    notes: 'Proposal sent, awaiting response',
-    tags: ['consulting', 'proposal'],
-    createdAt: '2024-01-05T08:00:00Z',
-    updatedAt: '2024-01-19T12:00:00Z',
-    lastContactDate: '2024-01-19T12:00:00Z',
-    nextFollowUpDate: '2024-01-24T11:00:00Z',
-    estimatedValue: 100000,
-    probability: 80
-  },
-  {
-    id: '5',
-    name: 'Robert Wilson',
-    email: 'rwilson@manufacturing.com',
-    phone: '+1-555-0127',
-    company: 'Wilson Manufacturing',
-    position: 'Operations Manager',
-    source: 'event',
-    status: 'closed_won',
-    priority: 'high',
-    assignedTo: 'user1',
-    notes: 'Deal closed successfully',
-    tags: ['manufacturing', 'closed'],
-    createdAt: '2023-12-20T10:00:00Z',
-    updatedAt: '2024-01-15T15:00:00Z',
-    lastContactDate: '2024-01-15T15:00:00Z',
-    estimatedValue: 60000,
-    probability: 100
+interface Lead {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  company?: string
+  jobTitle?: string
+  status:
+    | 'NEW'
+    | 'CONTACTED'
+    | 'QUALIFIED'
+    | 'CONVERTED'
+    | 'LOST'
+    | 'PROPOSAL_SENT'
+    | 'NEGOTIATION'
+    | 'CLOSED_WON'
+    | 'CLOSED_LOST'
+  source:   
+  | 'WEBSITE'
+  | 'SOCIAL_MEDIA'
+  | 'EMAIL_CAMPAIGN'
+  | 'COLD_CALL'
+  | 'REFERRAL'
+  | 'EVENT'
+  | 'ADVERTISEMENT'
+  | 'OTHER';
+  score?: number
+  ownerId?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+interface CreateLeadRequest {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  company?: string
+  jobTitle?: string
+  source: Lead['source']
+  notes?: string
+}
+
+interface UpdateLeadRequest {
+  firstName?: string
+  lastName?: string
+  email?: string
+  phone?: string
+  company?: string
+  jobTitle?: string
+  status?: Lead['status']
+  source?: Lead['source']
+  notes?: string
+}
+
+interface LeadFilters {
+  status?: Lead['status'][]
+  source?: Lead['source'][]
+  ownerId?: string
+  search?: string
+  dateFrom?: string
+  dateTo?: string
+  scoreMin?: number
+  scoreMax?: number
+}
+
+interface PaginationParams {
+  page?: number
+  limit?: number
+}
+
+interface LeadsResponse {
+  leads: Lead[]
+  pagination: {
+    page: number
+    limit: number
+    total: number
+    totalPages: number
   }
-]
+}
 
-// Simulate API delay
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+interface LeadStats {
+  total: number
+  byStatus: Record<Lead['status'], number>
+  bySource: Record<Lead['source'], number>
+  averageScore: number
+  recentlyCreated: number
+}
+
+// API Core base URL
+const API_BASE_URL = 'http://localhost:3001'
 
 export const leadsService = {
-  // Get all leads with optional filters
-  async getLeads(filters?: LeadFilters): Promise<Lead[]> {
-    await delay(500)
-    
-    let filteredLeads = [...mockLeads]
-    
-    if (filters) {
-      if (filters.search) {
-        const search = filters.search.toLowerCase()
-        filteredLeads = filteredLeads.filter(lead => 
-          lead.name.toLowerCase().includes(search) ||
-          lead.email.toLowerCase().includes(search) ||
-          lead.company?.toLowerCase().includes(search)
-        )
-      }
-      
+  /**
+   * Get leads with pagination and filters
+   */
+  async getLeads(
+    filters: LeadFilters = {},
+    pagination: PaginationParams = {},
+    token: string
+  ): Promise<LeadsResponse> {
+    try {
+      const params = new URLSearchParams()
+
+      // Add pagination
+      if (pagination.page) params.append('page', pagination.page.toString())
+      if (pagination.limit) params.append('limit', pagination.limit.toString())
+
+      // Add filters
       if (filters.status && filters.status.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => filters.status!.includes(lead.status))
+        filters.status.forEach(status => params.append('status', status))
       }
-      
       if (filters.source && filters.source.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => filters.source!.includes(lead.source))
+        filters.source.forEach(source => params.append('source', source))
       }
-      
-      if (filters.priority && filters.priority.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => filters.priority!.includes(lead.priority))
+      if (filters.ownerId) params.append('ownerId', filters.ownerId)
+      if (filters.search) params.append('q', filters.search)
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
+      if (filters.dateTo) params.append('dateTo', filters.dateTo)
+      if (filters.scoreMin)
+        params.append('scoreMin', filters.scoreMin.toString())
+      if (filters.scoreMax)
+        params.append('scoreMax', filters.scoreMax.toString())
+
+      const response = await fetch(`${API_BASE_URL}/api/core/leads?${params}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to fetch leads')
       }
-      
-      if (filters.assignedTo && filters.assignedTo.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => 
-          lead.assignedTo && filters.assignedTo!.includes(lead.assignedTo)
-        )
+
+      const data = await response.json()
+      return {
+        leads: data.data || [],
+        pagination: data.meta || {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+        },
       }
-      
-      if (filters.tags && filters.tags.length > 0) {
-        filteredLeads = filteredLeads.filter(lead => 
-          filters.tags!.some(tag => lead.tags.includes(tag))
-        )
+    } catch (error) {
+      console.error('❌ Get leads error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get lead by ID
+   */
+  async getLeadById(id: string, token: string): Promise<Lead> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/core/leads/${id}`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to fetch lead')
       }
+
+      const data = await response.json()
+      return data.data
+    } catch (error) {
+      console.error('❌ Get lead by ID error:', error)
+      throw error
     }
-    
-    return filteredLeads
   },
-  
-  // Get single lead by ID
-  async getLead(id: string): Promise<Lead | null> {
-    await delay(300)
-    return mockLeads.find(lead => lead.id === id) || null
-  },
-  
-  // Create new lead
-  async createLead(data: LeadFormData): Promise<Lead> {
-    await delay(500)
-    
-    const newLead: Lead = {
-      id: Date.now().toString(),
-      ...data,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    }
-    
-    mockLeads.unshift(newLead)
-    return newLead
-  },
-  
-  // Update existing lead
-  async updateLead(id: string, data: Partial<LeadFormData>): Promise<Lead> {
-    await delay(500)
-    
-    const leadIndex = mockLeads.findIndex(lead => lead.id === id)
-    if (leadIndex === -1) {
-      throw new Error('Lead not found')
-    }
-    
-    const updatedLead = {
-      ...mockLeads[leadIndex],
-      ...data,
-      updatedAt: new Date().toISOString()
-    }
-    
-    mockLeads[leadIndex] = updatedLead
-    return updatedLead
-  },
-  
-  // Delete lead
-  async deleteLead(id: string): Promise<void> {
-    await delay(300)
-    
-    const leadIndex = mockLeads.findIndex(lead => lead.id === id)
-    if (leadIndex === -1) {
-      throw new Error('Lead not found')
-    }
-    
-    mockLeads.splice(leadIndex, 1)
-  },
-  
-  // Get lead statistics
-  async getLeadStats(): Promise<{
-    total: number
-    byStatus: Record<LeadStatus, number>
-    bySource: Record<LeadSource, number>
-    byPriority: Record<LeadPriority, number>
-  }> {
-    await delay(200)
-    
-    const stats = {
-      total: mockLeads.length,
-      byStatus: {} as Record<LeadStatus, number>,
-      bySource: {} as Record<LeadSource, number>,
-      byPriority: {} as Record<LeadPriority, number>
-    }
-    
-    mockLeads.forEach(lead => {
-      stats.byStatus[lead.status] = (stats.byStatus[lead.status] || 0) + 1
-      stats.bySource[lead.source] = (stats.bySource[lead.source] || 0) + 1
-      stats.byPriority[lead.priority] = (stats.byPriority[lead.priority] || 0) + 1
+
+  /**
+   * Create new lead
+   */
+  async createLead(leadData: CreateLeadRequest, token: string): Promise<Lead> {
+    console.log('🚀 Creating lead with data:', {
+      ...leadData,
+      timestamp: new Date().toISOString()
     })
-    
-    return stats
-  }
+  
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/core/leads`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(leadData),
+      })
+  
+      console.log('📡 API Response status:', response.status)
+      console.log('📡 API Response headers:', Object.fromEntries(response.headers.entries()))
+  
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ API Error Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData,
+          requestData: leadData
+        })
+        
+        // Tạo thông báo lỗi chi tiết hơn
+        let errorMessage = errorData.message || 'Failed to create lead'
+        
+        // Nếu có chi tiết lỗi validation, thêm vào thông báo
+        if (errorData.details && errorData.details.errors) {
+          const validationErrors = errorData.details.errors
+            .map((err: any) => `${err.field}: ${err.message}`)
+            .join(', ')
+          errorMessage += ` - ${validationErrors}`
+        }
+        
+        throw new Error(errorMessage)
+      }
+  
+      const data = await response.json()
+      console.log('✅ Lead created successfully:', {
+        leadId: data.data?.id,
+        leadData: data.data,
+        responseTime: new Date().toISOString()
+      })
+      return data.data
+    } catch (error) {
+      console.error('❌ Create lead error:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        requestData: leadData,
+        timestamp: new Date().toISOString()
+      })
+      throw error
+    }
+  },
+
+  /**
+   * Update lead
+   */
+  async updateLead(
+    id: string,
+    updateData: UpdateLeadRequest,
+    token: string
+  ): Promise<Lead> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/core/leads/${id}`, {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update lead')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead updated successfully:', data.data)
+      return data.data
+    } catch (error) {
+      console.error('❌ Update lead error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Delete lead
+   */
+  async deleteLead(id: string, token: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/core/leads/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to delete lead')
+      }
+
+      console.log('✅ Lead deleted successfully')
+    } catch (error) {
+      console.error('❌ Delete lead error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Update lead score
+   */
+  async updateLeadScore(
+    id: string,
+    score: number,
+    token: string
+  ): Promise<Lead> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/core/leads/${id}/score`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ score }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update lead score')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead score updated successfully:', data.data)
+      return data.data
+    } catch (error) {
+      console.error('❌ Update lead score error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Update lead status
+   */
+  async updateLeadStatus(
+    id: string,
+    status: Lead['status'],
+    token: string
+  ): Promise<Lead> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/core/leads/${id}/status`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ status }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to update lead status')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead status updated successfully:', data.data)
+      return data.data
+    } catch (error) {
+      console.error('❌ Update lead status error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Assign lead to user
+   */
+  async assignLead(id: string, ownerId: string, token: string): Promise<Lead> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/core/leads/${id}/assign`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ ownerId }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to assign lead')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead assigned successfully:', data.data)
+      return data.data
+    } catch (error) {
+      console.error('❌ Assign lead error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Convert lead
+   */
+  async convertLead(id: string, token: string): Promise<Lead> {
+    try {
+      const response = await fetch(
+        `${API_BASE_URL}/api/core/leads/${id}/convert`,
+        {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to convert lead')
+      }
+
+      const data = await response.json()
+      console.log('✅ Lead converted successfully:', data.data)
+      return data.data
+    } catch (error) {
+      console.error('❌ Convert lead error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get lead statistics
+   */
+  async getLeadStats(
+    dateFrom?: string,
+    dateTo?: string,
+    token?: string
+  ): Promise<LeadStats> {
+    try {
+      const params = new URLSearchParams()
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/core/leads/stats?${params}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to fetch lead stats')
+      }
+
+      const data = await response.json()
+      return data.data
+    } catch (error) {
+      console.error('❌ Get lead stats error:', error)
+      throw error
+    }
+  },
+}
+
+export type {
+  Lead,
+  CreateLeadRequest,
+  UpdateLeadRequest,
+  LeadFilters,
+  PaginationParams,
+  LeadsResponse,
+  LeadStats,
 }

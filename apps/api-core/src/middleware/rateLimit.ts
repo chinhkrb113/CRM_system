@@ -153,7 +153,7 @@ export const rateLimitConfigs = {
   // Authentication rate limit
   auth: {
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 5, // 5 login attempts per 15 minutes
+    max: 50, // 50 login attempts per 15 minutes (increased for development)
     message: 'Too many login attempts, please try again later',
     keyGenerator: (req: Request) => {
       const email = req.body?.email || 'unknown';

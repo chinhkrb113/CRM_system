@@ -53,9 +53,12 @@ export const verifyTokenSchema = Joi.object({
 
 // Lead validation schemas
 export const createLeadSchema = Joi.object({
-  name: Joi.string().min(2).max(100).required(),
+  firstName: Joi.string().min(2).max(100).required(),
+  lastName: Joi.string().min(2).max(100).required(),
   email: emailSchema.required(),
-  phone: phoneSchema.required(),
+  phone: phoneSchema.allow('', null),
+  company: Joi.string().max(255).allow('', null),
+  jobTitle: Joi.string().max(255).allow('', null),
   source: Joi.string().valid(...Object.values(LeadSource)).required(),
   notes: Joi.string().max(1000).allow('', null),
 });
@@ -64,6 +67,21 @@ export const updateLeadSchema = Joi.object({
   status: Joi.string().valid(...Object.values(LeadStatus)),
   ownerId: uuidSchema.allow(null),
   notes: Joi.string().max(1000).allow('', null),
+}).min(1);
+
+export const updateLeadPutSchema = Joi.object({
+  firstName: Joi.string().min(2).max(100),
+  lastName: Joi.string().min(2).max(100),
+  email: emailSchema,
+  phone: phoneSchema,
+  company: Joi.string().max(255).allow('', null),
+  jobTitle: Joi.string().max(255).allow('', null),
+  source: Joi.string().valid(...Object.values(LeadSource)),
+  status: Joi.string().valid(...Object.values(LeadStatus)),
+  ownerId: uuidSchema.allow(null),
+  score: Joi.number().integer().min(0).max(100),
+  notes: Joi.string().max(1000).allow('', null),
+  customFields: Joi.object().pattern(Joi.string(), Joi.any()).allow(null),
 }).min(1);
 
 export const leadFiltersSchema = Joi.object({

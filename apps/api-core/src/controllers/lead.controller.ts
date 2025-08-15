@@ -1,6 +1,7 @@
 import { Response } from 'express';
+import Joi from 'joi';
 import { LeadService } from '@/services/lead.service';
-import { ValidationService, createLeadSchema, leadIdParamSchema, updateLeadSchema, updateLeadScoreSchema, dateRangeQuerySchema, assignLeadSchema, paginationQuerySchema, bulkUpdateLeadsSchema, leadFiltersSchema } from '@/utils/validation';
+import { ValidationService, createLeadSchema, uuidParamSchema, updateLeadSchema, updateLeadPutSchema, updateLeadScoreSchema, dateRangeQuerySchema, assignLeadSchema, paginationQuerySchema, bulkUpdateLeadsSchema, leadFiltersSchema } from '@/utils/validation';
 import { asyncHandler } from '@/middleware/error';
 import { logger } from '@/middleware/logging';
 import { AuthenticatedRequest } from '@/types';
@@ -99,7 +100,7 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 
@@ -123,12 +124,12 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 
     const updateData = ValidationService.validateBody(
-       updateLeadSchema,
+       updateLeadPutSchema,
        req.body
      ) as any;
 
@@ -149,7 +150,42 @@ export class LeadController {
   });
 
   /**
-   * Delete lead (soft delete)
+   * Update lead (PUT method)
+   * PUT /api/core/leads/:id
+   */
+  static updateLeadPut = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    // Validate parameters
+    const { id } = ValidationService.validateParams(
+      uuidParamSchema,
+      req.params
+    ) as { id: string };
+
+    const updateData = ValidationService.validateBody(
+       updateLeadPutSchema,
+       req.body
+     ) as any;
+
+    // Update lead
+    const lead = await LeadService.updateLead(id, updateData, userId, userRole);
+
+    logger.info('Lead updated successfully (PUT)', {
+      leadId: id,
+      updatedBy: userId,
+      updatedFields: Object.keys(updateData),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: lead,
+      message: 'Lead updated successfully',
+    });
+  });
+
+  /**
+   * Delete lead (hard delete)
    * DELETE /api/core/leads/:id
    */
   static deleteLead = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
@@ -158,7 +194,7 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 
@@ -186,7 +222,7 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 
@@ -208,6 +244,55 @@ export class LeadController {
       success: true,
       data: lead,
       message: 'Lead score updated successfully',
+    });
+  });
+
+  /**
+   * Update lead status
+   * PUT /api/core/leads/:id/status
+   */
+  static updateLeadStatus = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
+    const userId = req.user!.id;
+    const userRole = req.user!.role;
+
+    // Validate parameters
+    const { id } = ValidationService.validateParams(
+      uuidParamSchema,
+      req.params
+    ) as { id: string };
+
+    // Validate request body
+    const { status } = ValidationService.validateBody(
+      Joi.object({
+        status: Joi.string().valid(...Object.values(LeadStatus)).required()
+      }),
+      req.body
+    ) as { status: LeadStatus };
+
+    logger.info('Updating lead status', {
+      leadId: id,
+      newStatus: status,
+      updatedBy: userId,
+    });
+
+    // Update lead status
+    const lead = await LeadService.updateLeadStatus(
+      id,
+      status as LeadStatus,
+      userId,
+      userRole
+    );
+
+    logger.info('Lead status updated successfully', {
+      leadId: id,
+      newStatus: status,
+      updatedBy: userId,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: lead,
+      message: 'Lead status updated successfully',
     });
   });
 
@@ -251,7 +336,7 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 
@@ -291,7 +376,7 @@ export class LeadController {
 
     // Validate parameters
     const { id } = ValidationService.validateParams(
-      leadIdParamSchema,
+      uuidParamSchema,
       req.params
     ) as { id: string };
 

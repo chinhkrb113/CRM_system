@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 import { useThemeStore } from '@/stores/theme'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { QueryProvider } from '@/lib/query-client'
@@ -27,6 +28,7 @@ function App() {
     <QueryProvider>
       <AuthProvider>
         <Router>
+          <Toaster />
           <Routes>
             {/* Public Routes */}
             <Route path="/login" element={<Login />} />

@@ -33,6 +33,13 @@ export class AuthController {
       userAgent: req.get('User-Agent'),
     });
 
+    // Set cache-control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
+
     res.status(200).json({
       success: true,
       data: {
@@ -61,6 +68,13 @@ export class AuthController {
 
     // Get current user data
     const user = await AuthService.getCurrentUser(userId);
+
+    // Set cache-control headers to prevent caching
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
+    });
 
     res.status(200).json({
       success: true,
