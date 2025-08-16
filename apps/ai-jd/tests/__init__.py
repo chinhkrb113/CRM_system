@@ -1,0 +1,1 @@
+# Tests package for AI JD service

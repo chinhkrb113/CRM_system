@@ -1,0 +1,601 @@
+openapi: 3.0.3
+info:
+  title: AI JD Parsing & Matching Service
+  description: |
+    Service for parsing job descriptions and matching candidates using TF-IDF and linear scoring algorithms.
+    
+    ## Features
+    - Extract technical skills, soft skills, and seniority level from job descriptions
+    - Rank candidates against job requirements with detailed scoring
+    - TF-IDF baseline for keyword-based skill extraction and matching
+    
+    ## Algorithm Details
+    - **JD Parsing**: Keyword matching against predefined skill database with weight calculation
+    - **Candidate Matching**: Linear combination of skill, evaluation, and recency scores
+  version: 1.0.0
+  contact:
+    name: AI JD Service Team
+    email: ai-jd@crm-system.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8002
+    description: Local development server
+  - url: https://api.crm-system.com/ai-jd
+    description: Production server
+
+paths:
+  /:
+    get:
+      summary: Service information
+      description: Get basic information about the AI JD service
+      operationId: getServiceInfo
+      tags:
+        - Service Info
+      responses:
+        '200':
+          description: Service information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                    example: "AI JD Parsing & Matching"
+                  version:
+                    type: string
+                    example: "1.0.0"
+                  status:
+                    type: string
+                    example: "running"
+                  endpoints:
+                    type: array
+                    items:
+                      type: string
+                    example: ["/", "/health", "/api/ai/jd/parse_jd", "/api/ai/jd/match"]
+
+  /health:
+    get:
+      summary: Health check
+      description: Check if the service is healthy and running
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  service:
+                    type: string
+                    example: "ai-jd"
+
+  /api/ai/jd/parse_jd:
+    post:
+      summary: Parse job description
+      description: |
+        Extract technical skills, soft skills, and seniority level from job description text.
+        Uses TF-IDF and keyword matching algorithms.
+      operationId: parseJobDescription
+      tags:
+        - JD Parsing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JDParseRequest'
+            examples:
+              senior_python_dev:
+                summary: Senior Python Developer
+                value:
+                  job_description: "We are looking for a Senior Python Developer with experience in Django, FastAPI, PostgreSQL, and AWS. Strong communication and leadership skills required. 5+ years of experience needed."
+                  job_id: "job_001"
+              ml_engineer:
+                summary: ML Engineer
+                value:
+                  job_description: "Principal Machine Learning Engineer. TensorFlow, PyTorch, Python, SQL, AWS required. 10+ years experience in AI/ML. Leadership and mentoring skills essential."
+                  job_id: "ml_job_001"
+      responses:
+        '200':
+          description: Successfully parsed job description
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JDParseResponse'
+              examples:
+                senior_python_dev:
+                  summary: Senior Python Developer Result
+                  value:
+                    skills:
+                      - name: "python"
+                        weight: 0.8
+                      - name: "django"
+                        weight: 0.6
+                      - name: "fastapi"
+                        weight: 0.5
+                      - name: "postgresql"
+                        weight: 0.4
+                      - name: "aws"
+                        weight: 0.3
+                    soft_skills: ["communication", "leadership"]
+                    seniority_hint: "senior"
+                    job_id: "job_001"
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      summary: Get JD parsing endpoint information
+      description: Get detailed information about the JD parsing endpoint usage
+      operationId: getParseJDInfo
+      tags:
+        - JD Parsing
+      responses:
+        '200':
+          description: Endpoint information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  endpoint:
+                    type: string
+                  method:
+                    type: string
+                  description:
+                    type: string
+                  request_format:
+                    type: object
+                  response_format:
+                    type: object
+                  example_request:
+                    type: object
+
+  /api/ai/jd/match:
+    post:
+      summary: Match candidates
+      description: |
+        Match candidates against job requirements and return ranked results.
+        Uses linear scoring combining skill matching, evaluation scores, and project recency.
+      operationId: matchCandidates
+      tags:
+        - Candidate Matching
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchRequest'
+            examples:
+              basic_matching:
+                summary: Basic candidate matching
+                value:
+                  job_id: "job_001"
+                  candidates:
+                    - student_id: "student_001"
+                      skills:
+                        python: 4.5
+                        django: 4.0
+                        sql: 3.5
+                        aws: 3.0
+                      eval_score: 85.0
+                      recent_projects:
+                        - name: "E-commerce Platform"
+                          description: "Django-based e-commerce site"
+                          technologies: ["Python", "Django", "PostgreSQL"]
+                          completion_date: "2024-01-15"
+                    - student_id: "student_002"
+                      skills:
+                        javascript: 4.0
+                        react: 4.5
+                        nodejs: 3.5
+                      eval_score: 78.0
+                      recent_projects: []
+                  top_k: 5
+                  weights:
+                    skill: 0.6
+                    eval: 0.3
+                    recency: 0.1
+      responses:
+        '200':
+          description: Successfully matched candidates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchResponse'
+              examples:
+                basic_matching_result:
+                  summary: Basic matching result
+                  value:
+                    job_id: "job_001"
+                    matches:
+                      - student_id: "student_001"
+                        score: 87.5
+                        reasons:
+                          top_terms: ["python", "django", "sql"]
+                          skill_gaps: ["aws"]
+                          strengths: ["python (level 4.5)", "django (level 4.0)"]
+                        skill_score: 85.0
+                        eval_score: 85.0
+                        recency_score: 90.0
+                      - student_id: "student_002"
+                        score: 65.2
+                        reasons:
+                          top_terms: []
+                          skill_gaps: ["python", "django", "sql", "aws"]
+                          strengths: ["javascript (level 4.0)", "react (level 4.5)"]
+                        skill_score: 45.0
+                        eval_score: 78.0
+                        recency_score: 50.0
+                    total_candidates: 2
+                    processing_time_ms: 15.2
+        '422':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    
+    get:
+      summary: Get candidate matching endpoint information
+      description: Get detailed information about the candidate matching endpoint usage
+      operationId: getMatchInfo
+      tags:
+        - Candidate Matching
+      responses:
+        '200':
+          description: Endpoint information
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  endpoint:
+                    type: string
+                  method:
+                    type: string
+                  description:
+                    type: string
+                  request_format:
+                    type: object
+                  response_format:
+                    type: object
+
+components:
+  schemas:
+    JDParseRequest:
+      type: object
+      required:
+        - job_description
+      properties:
+        job_description:
+          type: string
+          description: Job description text to parse
+          example: "We are looking for a Senior Python Developer with experience in Django, PostgreSQL, and AWS. Strong communication skills required."
+        job_id:
+          type: string
+          description: Optional job ID for reference
+          example: "job_123"
+
+    Skill:
+      type: object
+      required:
+        - name
+        - weight
+      properties:
+        name:
+          type: string
+          description: Skill name
+          example: "python"
+        weight:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Skill importance weight (0-1)
+          example: 0.8
+
+    JDParseResponse:
+      type: object
+      required:
+        - skills
+        - soft_skills
+        - seniority_hint
+      properties:
+        skills:
+          type: array
+          items:
+            $ref: '#/components/schemas/Skill'
+          description: Extracted technical skills with weights
+        soft_skills:
+          type: array
+          items:
+            type: string
+          description: Extracted soft skills
+          example: ["communication", "leadership"]
+        seniority_hint:
+          type: string
+          enum: ["junior", "mid", "senior", "lead", "principal"]
+          description: Detected seniority level
+          example: "senior"
+        job_id:
+          type: string
+          description: Job ID if provided
+          example: "job_123"
+
+    Project:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Project name
+          example: "E-commerce Platform"
+        description:
+          type: string
+          description: Project description
+          example: "Django-based e-commerce site"
+        technologies:
+          type: array
+          items:
+            type: string
+          description: Technologies used
+          example: ["Python", "Django", "PostgreSQL"]
+        completion_date:
+          type: string
+          format: date
+          description: Project completion date (YYYY-MM-DD)
+          example: "2024-01-15"
+
+    Candidate:
+      type: object
+      required:
+        - student_id
+        - skills
+        - eval_score
+      properties:
+        student_id:
+          type: string
+          description: Unique student identifier
+          example: "student_001"
+        skills:
+          type: object
+          additionalProperties:
+            type: number
+            format: float
+            minimum: 0.0
+            maximum: 5.0
+          description: Skills mapping - skill_name to level (0-5)
+          example:
+            python: 4.5
+            django: 4.0
+            sql: 3.5
+        eval_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Evaluation score (0-100)
+          example: 85.0
+        recent_projects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Project'
+          description: Recent projects
+          default: []
+
+    MatchWeights:
+      type: object
+      properties:
+        skill:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for skill matching
+          default: 0.6
+          example: 0.6
+        eval:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for evaluation score
+          default: 0.3
+          example: 0.3
+        recency:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Weight for project recency
+          default: 0.1
+          example: 0.1
+
+    MatchRequest:
+      type: object
+      required:
+        - job_id
+        - candidates
+      properties:
+        job_id:
+          type: string
+          description: Job ID to match against
+          example: "job_001"
+        candidates:
+          type: array
+          items:
+            $ref: '#/components/schemas/Candidate'
+          description: List of candidates to evaluate
+        top_k:
+          type: integer
+          minimum: 1
+          maximum: 100
+          description: Number of top matches to return
+          default: 10
+          example: 5
+        weights:
+          $ref: '#/components/schemas/MatchWeights'
+          description: Scoring weights
+
+    MatchReasons:
+      type: object
+      required:
+        - top_terms
+        - skill_gaps
+      properties:
+        top_terms:
+          type: array
+          items:
+            type: string
+          description: Top matching terms/skills
+          example: ["python", "django", "sql"]
+        skill_gaps:
+          type: array
+          items:
+            type: string
+          description: Missing or weak skills
+          example: ["aws", "kubernetes"]
+        strengths:
+          type: array
+          items:
+            type: string
+          description: Candidate strengths
+          default: []
+          example: ["python (level 4.5)", "django (level 4.0)"]
+
+    Match:
+      type: object
+      required:
+        - student_id
+        - score
+        - reasons
+        - skill_score
+        - eval_score
+        - recency_score
+      properties:
+        student_id:
+          type: string
+          description: Student identifier
+          example: "student_001"
+        score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Overall matching score (0-100)
+          example: 87.5
+        reasons:
+          $ref: '#/components/schemas/MatchReasons'
+          description: Detailed matching reasons
+        skill_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Skill matching score
+          example: 85.0
+        eval_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Evaluation score
+          example: 85.0
+        recency_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 100.0
+          description: Project recency score
+          example: 90.0
+
+    MatchResponse:
+      type: object
+      required:
+        - job_id
+        - matches
+        - total_candidates
+        - processing_time_ms
+      properties:
+        job_id:
+          type: string
+          description: Job ID that was matched against
+          example: "job_001"
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/Match'
+          description: Ranked list of candidate matches
+        total_candidates:
+          type: integer
+          description: Total number of candidates evaluated
+          example: 15
+        processing_time_ms:
+          type: number
+          format: float
+          description: Processing time in milliseconds
+          example: 15.2
+
+    ValidationError:
+      type: object
+      properties:
+        detail:
+          type: array
+          items:
+            type: object
+            properties:
+              loc:
+                type: array
+                items:
+                  oneOf:
+                    - type: string
+                    - type: integer
+              msg:
+                type: string
+              type:
+                type: string
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Internal server error"
+
+tags:
+  - name: Service Info
+    description: Basic service information and health checks
+  - name: Health
+    description: Health monitoring endpoints
+  - name: JD Parsing
+    description: Job description parsing and skill extraction
+  - name: Candidate Matching
+    description: Candidate ranking and matching against job requirements
