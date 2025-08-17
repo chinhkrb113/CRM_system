@@ -1,37 +1,107 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, Calendar, List, BarChart3 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AppointmentCalendar } from '@/components/appointments/appointment-calendar'
 import { AppointmentFiltersComponent } from '@/components/appointments/appointment-filters'
-import { getAppointmentStats } from '@/services/appointments'
+import { AppointmentDialog } from '@/components/appointments/appointment-dialog'
+import { ViewAppointmentDialog } from '@/components/appointments/view-appointment-dialog'
+import { DeleteAppointmentDialog } from '@/components/appointments/delete-appointment-dialog'
+import { getAppointmentStats, getAppointments, appointmentsService } from '@/services/appointments'
 import type { Appointment, AppointmentFilters, CalendarView } from '@/types/appointment'
 import { useTranslation } from 'react-i18next'
 
 export function Appointments() {
   const { t } = useTranslation()
-  const [view, setView] = useState<CalendarView>('list')
+  const queryClient = useQueryClient()
+  const [view, setView] = useState<CalendarView>('month')
   const [filters, setFilters] = useState<AppointmentFilters>({})
-  const [_selectedAppointment, _setSelectedAppointment] = useState<Appointment | null>(null)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
+  
+  // Dialog states
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const { data: stats } = useQuery({
     queryKey: ['appointment-stats'],
-    queryFn: getAppointmentStats,
+    queryFn: () => getAppointmentStats(),
   })
 
+  // Add state for calendar date
+  const [calendarDate, setCalendarDate] = useState(new Date())
+
+  const { data: appointmentsResponse, isLoading } = useQuery({
+    queryKey: ['appointments', filters, view, calendarDate.getFullYear(), calendarDate.getMonth()],
+    queryFn: async () => {
+      if (view === 'list') {
+        return getAppointments(filters)
+      } else {
+        // For calendar views, use getCalendarView with current calendar date
+        const calendarData = await appointmentsService.getCalendarView(
+          calendarDate.getFullYear(),
+          calendarDate.getMonth() + 1,
+          view
+        )
+        return {
+          data: calendarData.appointments,
+          meta: {
+            total: calendarData.totalCount,
+            page: 1,
+            limit: calendarData.totalCount,
+            totalPages: 1
+          }
+        }
+      }
+    },
+  })
+
+  const appointments = appointmentsResponse?.data || []
+  
+  // Debug logging
+  console.log('=== APPOINTMENTS DEBUG ===')
+  console.log('View:', view)
+  console.log('Calendar date:', calendarDate)
+  console.log('Query key:', ['appointments', filters, view, calendarDate.getFullYear(), calendarDate.getMonth()])
+  console.log('Appointments response:', appointmentsResponse)
+  console.log('Appointments data:', appointments)
+  console.log('Appointments count:', appointments.length)
+  console.log('Is loading:', isLoading)
+  console.log('==========================')
+
   const handleAppointmentClick = (appointment: Appointment) => {
-    _setSelectedAppointment(appointment)
-    // TODO: Open appointment detail modal/drawer
-    console.log('Selected appointment:', appointment)
+    setSelectedAppointment(appointment)
+    setViewDialogOpen(true)
   }
 
   const handleCreateAppointment = () => {
-    // TODO: Open create appointment modal/form
-    console.log('Create new appointment')
+    setSelectedAppointment(null)
+    setCreateDialogOpen(true)
   }
 
+  const handleEditAppointment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setEditDialogOpen(true)
+  }
 
+  const handleDeleteAppointment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleAppointmentSaved = () => {
+    // Refresh appointment stats and calendar data
+    queryClient.invalidateQueries({ queryKey: ['appointment-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['appointments'] })
+  }
+
+  const handleAppointmentDeleted = () => {
+    // Refresh appointment stats and calendar data
+    queryClient.invalidateQueries({ queryKey: ['appointment-stats'] })
+    queryClient.invalidateQueries({ queryKey: ['appointments'] })
+  }
 
   const handleExportAppointments = () => {
     // TODO: Implement export functionality
@@ -156,13 +226,40 @@ export function Appointments() {
         view={view}
         onViewChange={setView}
         onAppointmentClick={handleAppointmentClick}
+        onEditAppointment={handleEditAppointment}
+        onDeleteAppointment={handleDeleteAppointment}
+        appointments={appointments}
+        isLoading={isLoading}
+        onDateChange={setCalendarDate}
       />
 
-      {/* TODO: Add modals/drawers for */}
-      {/* - Create/Edit Appointment Form */}
-      {/* - Appointment Detail View */}
-      {/* - Delete Confirmation */}
-      {/* - Import/Export Dialogs */}
+      {/* Dialogs */}
+      <AppointmentDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        appointment={null}
+        onAppointmentSaved={handleAppointmentSaved}
+      />
+      
+      <AppointmentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        appointment={selectedAppointment}
+        onAppointmentSaved={handleAppointmentSaved}
+      />
+      
+      <ViewAppointmentDialog
+        open={viewDialogOpen}
+        onOpenChange={setViewDialogOpen}
+        appointment={selectedAppointment}
+      />
+      
+      <DeleteAppointmentDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        appointment={selectedAppointment}
+        onAppointmentDeleted={handleAppointmentDeleted}
+      />
     </div>
   )
 }

@@ -192,7 +192,6 @@ export class InteractionService {
       if (search) {
         where.subject = {
           contains: search,
-          mode: 'insensitive',
         };
       }
 

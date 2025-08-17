@@ -1,211 +1,466 @@
 import type { Appointment, AppointmentFilters, AppointmentFormData, AppointmentStats, AppointmentStatus } from '@/types/appointment'
 
-// Mock data
-const mockAppointments: Appointment[] = [
-  {
-    id: '1',
-    title: 'Consultation with John Doe',
-    description: 'Initial consultation for study abroad program',
-    startTime: new Date('2024-01-15T09:00:00'),
-    endTime: new Date('2024-01-15T10:00:00'),
-    status: 'scheduled',
-    type: 'consultation',
-    leadId: '1',
-    leadName: 'John Doe',
-    attendees: ['john.doe@email.com', 'advisor@company.com'],
-    location: 'Office Room 101',
-    notes: 'Interested in UK universities',
-    createdAt: new Date('2024-01-10T08:00:00'),
-    updatedAt: new Date('2024-01-10T08:00:00'),
-  },
-  {
-    id: '2',
-    title: 'Interview - Jane Smith',
-    description: 'Scholarship interview',
-    startTime: new Date('2024-01-15T14:00:00'),
-    endTime: new Date('2024-01-15T15:30:00'),
-    status: 'confirmed',
-    type: 'interview',
-    leadId: '2',
-    leadName: 'Jane Smith',
-    attendees: ['jane.smith@email.com'],
-    meetingLink: 'https://zoom.us/j/123456789',
-    notes: 'Scholarship application review',
-    createdAt: new Date('2024-01-08T10:00:00'),
-    updatedAt: new Date('2024-01-12T16:00:00'),
-  },
-  {
-    id: '3',
-    title: 'Follow-up Meeting',
-    description: 'Document review and next steps',
-    startTime: new Date('2024-01-16T11:00:00'),
-    endTime: new Date('2024-01-16T12:00:00'),
-    status: 'completed',
-    type: 'follow-up',
-    leadId: '3',
-    leadName: 'Mike Johnson',
-    attendees: ['mike.johnson@email.com'],
-    location: 'Conference Room A',
-    notes: 'Documents submitted successfully',
-    createdAt: new Date('2024-01-05T09:00:00'),
-    updatedAt: new Date('2024-01-16T12:00:00'),
-  },
-  {
-    id: '4',
-    title: 'University Presentation',
-    description: 'Presentation about Canadian universities',
-    startTime: new Date('2024-01-17T15:00:00'),
-    endTime: new Date('2024-01-17T16:30:00'),
-    status: 'scheduled',
-    type: 'presentation',
-    attendees: ['group@email.com'],
-    location: 'Main Hall',
-    notes: 'Group presentation for 20 students',
-    createdAt: new Date('2024-01-12T14:00:00'),
-    updatedAt: new Date('2024-01-12T14:00:00'),
-  },
-  {
-    id: '5',
-    title: 'Cancelled Consultation',
-    description: 'Student cancelled due to schedule conflict',
-    startTime: new Date('2024-01-14T10:00:00'),
-    endTime: new Date('2024-01-14T11:00:00'),
-    status: 'cancelled',
-    type: 'consultation',
-    leadId: '4',
-    leadName: 'Sarah Wilson',
-    attendees: ['sarah.wilson@email.com'],
-    notes: 'Rescheduled for next week',
-    createdAt: new Date('2024-01-08T15:00:00'),
-    updatedAt: new Date('2024-01-13T09:00:00'),
-  },
-]
+// API Core base URL
+const API_BASE_URL = 'http://localhost:3001'
 
-// API functions
-export const getAppointments = async (filters?: AppointmentFilters): Promise<Appointment[]> => {
-  // Simulate API delay
-  await new Promise(resolve => setTimeout(resolve, 500))
+interface AppointmentsResponse {
+  data: Appointment[]
+  meta: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
+
+interface ApiResponse<T> {
+  success: boolean
+  data: T
+  message: string
+}
+
+// Helper function to get auth token
+const getAuthToken = (): string => {
+  // Get token from zustand store persisted in localStorage
+  const authStorage = localStorage.getItem('auth-storage')
+  if (!authStorage) {
+    throw new Error('No authentication data found')
+  }
   
-  let filteredAppointments = [...mockAppointments]
-  
-  if (filters) {
-    if (filters.status) {
-      filteredAppointments = filteredAppointments.filter(apt => apt.status === filters.status)
+  try {
+    const parsedAuth = JSON.parse(authStorage)
+    const token = parsedAuth.state?.token
+    if (!token) {
+      throw new Error('No authentication token found')
     }
-    
-    if (filters.type) {
-      filteredAppointments = filteredAppointments.filter(apt => apt.type === filters.type)
+    return token
+  } catch (error) {
+    throw new Error('Invalid authentication data')
+  }
+}
+
+// Helper function to handle API errors
+const handleApiError = async (response: Response) => {
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }))
+    throw new Error(errorData.message || `HTTP ${response.status}: ${response.statusText}`)
+  }
+}
+
+export const appointmentsService = {
+  /**
+   * Get appointments with pagination and filters
+   */
+  async getAppointments(filters: AppointmentFilters = {}): Promise<AppointmentsResponse> {
+    try {
+      const token = getAuthToken()
+      const params = new URLSearchParams()
+
+      // Add pagination
+      if (filters.page) params.append('page', filters.page.toString())
+      if (filters.limit) params.append('limit', filters.limit.toString())
+
+      // Add filters
+      if (filters.status) params.append('status', filters.status)
+      if (filters.leadId) params.append('leadId', filters.leadId)
+      if (filters.userId) params.append('userId', filters.userId)
+      if (filters.dateFrom) params.append('dateFrom', filters.dateFrom)
+      if (filters.dateTo) params.append('dateTo', filters.dateTo)
+      if (filters.search) params.append('q', filters.search)
+
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<AppointmentsResponse> = await response.json()
+      
+      // Validate response structure - backend returns {data: [], meta: {}}
+      if (!result.data || !Array.isArray(result.data.data)) {
+        console.warn('Invalid appointments response structure:', result)
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 0
+          }
+        }
+      }
+      
+      // Transform dates
+      const transformedData = {
+        data: result.data.data.map(appointment => ({
+          ...appointment,
+          scheduledAt: new Date(appointment.scheduledAt),
+          createdAt: new Date(appointment.createdAt),
+          updatedAt: new Date(appointment.updatedAt),
+        })),
+        meta: result.data.meta
+      }
+
+      return transformedData
+    } catch (error) {
+      console.error('❌ Get appointments error:', error)
+      throw error
     }
-    
-    if (filters.leadId) {
-      filteredAppointments = filteredAppointments.filter(apt => apt.leadId === filters.leadId)
+  },
+
+  /**
+   * Get appointment by ID
+   */
+  async getAppointment(id: string): Promise<Appointment> {
+    try {
+      const token = getAuthToken()
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/${id}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<Appointment> = await response.json()
+      
+      // Transform dates
+      return {
+        ...result.data,
+        scheduledAt: new Date(result.data.scheduledAt),
+        createdAt: new Date(result.data.createdAt),
+        updatedAt: new Date(result.data.updatedAt),
+      }
+    } catch (error) {
+      console.error('❌ Get appointment error:', error)
+      throw error
     }
-    
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase()
-      filteredAppointments = filteredAppointments.filter(apt => 
-        apt.title.toLowerCase().includes(searchLower) ||
-        apt.description?.toLowerCase().includes(searchLower) ||
-        apt.leadName?.toLowerCase().includes(searchLower)
-      )
+  },
+
+  /**
+   * Create new appointment
+   */
+  async createAppointment(leadId: string, data: AppointmentFormData): Promise<Appointment> {
+    try {
+      const token = getAuthToken()
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/leads/${leadId}/appointments`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: data.title,
+          description: data.description,
+          scheduledAt: data.scheduledAt.toISOString(),
+          duration: data.duration,
+          location: data.location,
+          meetingType: data.meetingType,
+          reminderMinutes: data.reminderMinutes,
+          notes: data.notes,
+        }),
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<Appointment> = await response.json()
+      
+      // Transform dates
+      return {
+        ...result.data,
+        scheduledAt: new Date(result.data.scheduledAt),
+        createdAt: new Date(result.data.createdAt),
+        updatedAt: new Date(result.data.updatedAt),
+      }
+    } catch (error) {
+      console.error('❌ Create appointment error:', error)
+      throw error
     }
-    
-    if (filters.dateRange) {
-      filteredAppointments = filteredAppointments.filter(apt => 
-        apt.startTime >= filters.dateRange!.start && apt.startTime <= filters.dateRange!.end
-      )
+  },
+
+  /**
+   * Update appointment
+   */
+  async updateAppointment(id: string, data: Partial<AppointmentFormData>): Promise<Appointment> {
+    try {
+      const token = getAuthToken()
+      
+      const updateData: any = { ...data }
+      if (updateData.scheduledAt) {
+        updateData.scheduledAt = updateData.scheduledAt.toISOString()
+      }
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<Appointment> = await response.json()
+      
+      // Transform dates
+      return {
+        ...result.data,
+        scheduledAt: new Date(result.data.scheduledAt),
+        createdAt: new Date(result.data.createdAt),
+        updatedAt: new Date(result.data.updatedAt),
+      }
+    } catch (error) {
+      console.error('❌ Update appointment error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Update appointment status
+   */
+  async updateAppointmentStatus(id: string, status: AppointmentStatus): Promise<Appointment> {
+    try {
+      const token = getAuthToken()
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/${id}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<Appointment> = await response.json()
+      
+      // Transform dates
+      return {
+        ...result.data,
+        scheduledAt: new Date(result.data.scheduledAt),
+        createdAt: new Date(result.data.createdAt),
+        updatedAt: new Date(result.data.updatedAt),
+      }
+    } catch (error) {
+      console.error('❌ Update appointment status error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Delete appointment
+   */
+  async deleteAppointment(id: string): Promise<void> {
+    try {
+      const token = getAuthToken()
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+    } catch (error) {
+      console.error('❌ Delete appointment error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get appointment statistics
+   */
+  async getAppointmentStats(dateFrom?: string, dateTo?: string): Promise<AppointmentStats> {
+    try {
+      const token = getAuthToken()
+      const params = new URLSearchParams()
+      
+      if (dateFrom) params.append('dateFrom', dateFrom)
+      if (dateTo) params.append('dateTo', dateTo)
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/stats?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<AppointmentStats> = await response.json()
+      
+      return result.data
+    } catch (error) {
+      console.error('❌ Get appointment stats error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get calendar view of appointments
+   */
+  async getCalendarView(
+    year?: number,
+    month?: number,
+    view: 'month' | 'week' | 'day' = 'month'
+  ): Promise<{
+    year: number;
+    month: number;
+    view: string;
+    appointments: Appointment[];
+    totalCount: number;
+  }> {
+    try {
+      const token = getAuthToken()
+      const params = new URLSearchParams()
+      
+      if (year) params.append('year', year.toString())
+      if (month) params.append('month', month.toString())
+      if (view) params.append('view', view)
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/calendar?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<{
+        year: number;
+        month: number;
+        view: string;
+        appointments: Appointment[];
+        totalCount: number;
+      }> = await response.json()
+      
+      // Transform dates in appointments
+      const transformedData = {
+        ...result.data,
+        appointments: result.data.appointments.map(appointment => ({
+          ...appointment,
+          scheduledAt: new Date(appointment.scheduledAt),
+          createdAt: new Date(appointment.createdAt),
+          updatedAt: new Date(appointment.updatedAt),
+        }))
+      }
+      
+      return transformedData
+    } catch (error) {
+      console.error('❌ Get calendar view error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get today's appointments
+   */
+  async getTodayAppointments(): Promise<Appointment[]> {
+    try {
+      const token = getAuthToken()
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/today`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<AppointmentsResponse> = await response.json()
+      
+      // Validate response structure
+      if (!result.data || !Array.isArray(result.data.data)) {
+        console.warn('Invalid today appointments response structure:', result)
+        return []
+      }
+      
+      // Transform dates
+      return result.data.data.map(appointment => ({
+        ...appointment,
+        scheduledAt: new Date(appointment.scheduledAt),
+        createdAt: new Date(appointment.createdAt),
+        updatedAt: new Date(appointment.updatedAt),
+      }))
+    } catch (error) {
+      console.error('❌ Get today appointments error:', error)
+      throw error
+    }
+  },
+
+  /**
+   * Get upcoming appointments
+   */
+  async getUpcomingAppointments(page = 1, limit = 10): Promise<AppointmentsResponse> {
+    try {
+      const token = getAuthToken()
+      const params = new URLSearchParams()
+      
+      params.append('page', page.toString())
+      params.append('limit', limit.toString())
+      
+      const response = await fetch(`${API_BASE_URL}/api/core/appointments/upcoming?${params}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      })
+
+      await handleApiError(response)
+      const result: ApiResponse<AppointmentsResponse> = await response.json()
+      
+      // Validate response structure
+      if (!result.data || !Array.isArray(result.data.data)) {
+        console.warn('Invalid upcoming appointments response structure:', result)
+        return {
+          data: [],
+          meta: {
+            total: 0,
+            page: 1,
+            limit: 10,
+            totalPages: 0
+          }
+        }
+      }
+      
+      // Transform dates
+      const transformedData = {
+        data: result.data.data.map(appointment => ({
+          ...appointment,
+          scheduledAt: new Date(appointment.scheduledAt),
+          createdAt: new Date(appointment.createdAt),
+          updatedAt: new Date(appointment.updatedAt),
+        })),
+        meta: result.data.meta
+      }
+
+      return transformedData
+    } catch (error) {
+      console.error('❌ Get upcoming appointments error:', error)
+      throw error
     }
   }
-  
-  return filteredAppointments.sort((a, b) => a.startTime.getTime() - b.startTime.getTime())
 }
 
-export const getAppointment = async (id: string): Promise<Appointment | null> => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  return mockAppointments.find(apt => apt.id === id) || null
-}
+// Legacy exports for backward compatibility
+// Export types
+export type { Appointment, AppointmentFormData, AppointmentFilters, AppointmentStats, AppointmentStatus } from '@/types/appointment'
 
-export const createAppointment = async (data: AppointmentFormData): Promise<Appointment> => {
-  await new Promise(resolve => setTimeout(resolve, 800))
-  
-  const newAppointment: Appointment = {
-    id: Math.random().toString(36).substr(2, 9),
-    ...data,
-    status: 'scheduled',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  }
-  
-  mockAppointments.push(newAppointment)
-  return newAppointment
-}
-
-export const updateAppointment = async (id: string, data: Partial<AppointmentFormData>): Promise<Appointment> => {
-  await new Promise(resolve => setTimeout(resolve, 600))
-  
-  const index = mockAppointments.findIndex(apt => apt.id === id)
-  if (index === -1) {
-    throw new Error('Appointment not found')
-  }
-  
-  mockAppointments[index] = {
-    ...mockAppointments[index],
-    ...data,
-    updatedAt: new Date(),
-  }
-  
-  return mockAppointments[index]
-}
-
-export const updateAppointmentStatus = async (id: string, status: AppointmentStatus): Promise<Appointment> => {
-  await new Promise(resolve => setTimeout(resolve, 400))
-  
-  const index = mockAppointments.findIndex(apt => apt.id === id)
-  if (index === -1) {
-    throw new Error('Appointment not found')
-  }
-  
-  mockAppointments[index] = {
-    ...mockAppointments[index],
-    status,
-    updatedAt: new Date(),
-  }
-  
-  return mockAppointments[index]
-}
-
-export const deleteAppointment = async (id: string): Promise<void> => {
-  await new Promise(resolve => setTimeout(resolve, 400))
-  
-  const index = mockAppointments.findIndex(apt => apt.id === id)
-  if (index === -1) {
-    throw new Error('Appointment not found')
-  }
-  
-  mockAppointments.splice(index, 1)
-}
-
-export const getAppointmentStats = async (): Promise<AppointmentStats> => {
-  await new Promise(resolve => setTimeout(resolve, 300))
-  
-  const now = new Date()
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const nextWeek = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-  
-  return {
-    total: mockAppointments.length,
-    scheduled: mockAppointments.filter(apt => apt.status === 'scheduled').length,
-    completed: mockAppointments.filter(apt => apt.status === 'completed').length,
-    cancelled: mockAppointments.filter(apt => apt.status === 'cancelled').length,
-    upcomingToday: mockAppointments.filter(apt => 
-      apt.status === 'scheduled' && 
-      apt.startTime >= today && 
-      apt.startTime < new Date(today.getTime() + 24 * 60 * 60 * 1000)
-    ).length,
-    upcomingWeek: mockAppointments.filter(apt => 
-      apt.status === 'scheduled' && 
-      apt.startTime >= today && 
-      apt.startTime < nextWeek
-    ).length,
-  }
-}
+// Export service functions
+export const getAppointments = appointmentsService.getAppointments
+export const getAppointment = appointmentsService.getAppointment
+export const createAppointment = appointmentsService.createAppointment
+export const updateAppointment = appointmentsService.updateAppointment
+export const updateAppointmentStatus = appointmentsService.updateAppointmentStatus
+export const deleteAppointment = appointmentsService.deleteAppointment
+export const getAppointmentStats = appointmentsService.getAppointmentStats

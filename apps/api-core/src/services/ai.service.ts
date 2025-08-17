@@ -1,4 +1,4 @@
-import { UserRole } from '@/constants/enums';
+import { UserRole, type UserRoleType } from '@/constants/enums';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/middleware/logging';
 import { NotFoundError, ForbiddenError, BadRequestError, InternalServerError } from '@/utils/errors';
@@ -81,7 +81,7 @@ export class AIService {
   static async scoreLead(
     leadId: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<{
     leadId: string;
     score: number;
@@ -434,7 +434,7 @@ export class AIService {
   static async batchScoreLeads(
     leadIds: string[],
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<{
     successful: Array<{
       leadId: string;
@@ -561,7 +561,7 @@ export class AIService {
   static async getLeadScoringHistory(
     leadId: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<Array<{
     score: number;
     timestamp: Date;

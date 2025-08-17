@@ -21,21 +21,19 @@ export function AppointmentFiltersComponent({ filters, onFiltersChange, classNam
   const [searchValue, setSearchValue] = useState(filters.search || '')
 
   const statusOptions: { value: AppointmentStatus; label: string }[] = [
-    { value: 'scheduled', label: t('appointments.status.scheduled') },
-    { value: 'confirmed', label: t('appointments.status.confirmed') },
-    { value: 'in-progress', label: t('appointments.status.in-progress') },
-    { value: 'completed', label: t('appointments.status.completed') },
-    { value: 'cancelled', label: t('appointments.status.cancelled') },
-    { value: 'no-show', label: t('appointments.status.no-show') },
+    { value: 'SCHEDULED', label: t('appointments.status.scheduled') },
+    { value: 'COMPLETED', label: t('appointments.status.completed') },
+    { value: 'CANCELLED', label: t('appointments.status.cancelled') },
+    { value: 'NO_SHOW', label: t('appointments.status.no-show') },
   ]
 
   const typeOptions: { value: AppointmentType; label: string }[] = [
-    { value: 'consultation', label: t('appointments.type.consultation') },
-    { value: 'interview', label: t('appointments.type.interview') },
-    { value: 'meeting', label: t('appointments.type.meeting') },
-    { value: 'follow-up', label: t('appointments.type.follow-up') },
-    { value: 'presentation', label: t('appointments.type.presentation') },
-    { value: 'other', label: t('appointments.type.other') },
+    { value: 'CONSULTATION', label: t('appointments.type.consultation') },
+    { value: 'INTERVIEW', label: t('appointments.type.interview') },
+    { value: 'MEETING', label: t('appointments.type.meeting') },
+    { value: 'FOLLOW_UP', label: t('appointments.type.follow-up') },
+    { value: 'PRESENTATION', label: t('appointments.type.presentation') },
+    { value: 'OTHER', label: t('appointments.type.other') },
   ]
 
   const handleSearchChange = (value: string) => {

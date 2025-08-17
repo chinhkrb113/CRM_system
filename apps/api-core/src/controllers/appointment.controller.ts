@@ -493,16 +493,26 @@ export class AppointmentController {
       req.query
     ) as { year?: string; month?: string; view?: string };
 
-    const { year, month, view = 'month' } = queryData;
+    const year = parseInt(queryData.year || '') || new Date().getFullYear();
+    const month = parseInt(queryData.month || '') || new Date().getMonth() + 1;
+    const view = (queryData.view as 'month' | 'week' | 'day' | 'list') || 'month';
 
-    // Get calendar data - method doesn't exist, return basic calendar
-    const calendar = {
-      year: parseInt(year || '') || new Date().getFullYear(),
-      month: parseInt(month || '') || new Date().getMonth() + 1,
+    // Get calendar data from service
+    const calendar = await AppointmentService.getCalendarView(
+      userId,
+      userRole,
+      year,
+      month,
+      view
+    );
+
+    logger.info('Calendar view retrieved successfully', {
+      userId,
+      year,
+      month,
       view,
-      appointments: [],
-      totalCount: 0
-    };
+      appointmentCount: calendar.totalCount,
+    });
 
     res.status(200).json({
       success: true,

@@ -189,7 +189,7 @@ export const checkAvailabilitySchema = Joi.object({
 export const calendarViewSchema = Joi.object({
   year: Joi.number().integer().min(2020).max(2030),
   month: Joi.number().integer().min(1).max(12),
-  view: Joi.string().valid('month', 'week', 'day').default('month'),
+  view: Joi.string().valid('month', 'week', 'day', 'list').default('month'),
 });
 
 export const bulkUpdateAppointmentsSchema = Joi.object({

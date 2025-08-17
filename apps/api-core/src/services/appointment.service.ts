@@ -1,5 +1,5 @@
 import { Appointment, Prisma } from '@prisma/client';
-import { AppointmentStatus, UserRole } from '@/constants/enums';
+import { AppointmentStatus, UserRole, type AppointmentStatusType, type UserRoleType } from '@/constants/enums';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/middleware/logging';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/utils/errors';
@@ -32,7 +32,7 @@ export interface AppointmentWithRelations extends Appointment {
 export interface AppointmentFilters {
   leadId?: string;
   userId?: string;
-  status?: AppointmentStatus;
+  status?: AppointmentStatusType;
   dateFrom?: Date;
   dateTo?: Date;
   search?: string;
@@ -49,7 +49,7 @@ export class AppointmentService {
     leadId: string,
     appointmentData: CreateAppointmentRequest,
     createdBy: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<AppointmentWithRelations> {
     try {
       const { title, description, scheduledAt } = appointmentData;
@@ -167,7 +167,7 @@ export class AppointmentService {
     filters: AppointmentFilters,
     pagination: PaginationParams,
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<PaginatedResponse<AppointmentWithRelations>> {
     try {
       const { page = 1, limit = 10 } = pagination;
@@ -221,8 +221,8 @@ export class AppointmentService {
       // Search filter
       if (search) {
         where.OR = [
-          { title: { contains: search, mode: 'insensitive' } },
-          { description: { contains: search, mode: 'insensitive' } },
+          { title: { contains: search } },
+          { description: { contains: search } },
         ];
       }
 
@@ -291,7 +291,7 @@ export class AppointmentService {
   static async getAppointmentById(
     appointmentId: string,
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<AppointmentWithRelations> {
     try {
       const appointment = await prisma.appointment.findUnique({
@@ -349,7 +349,7 @@ export class AppointmentService {
     appointmentId: string,
     updateData: UpdateAppointmentRequest,
     updatedBy: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<AppointmentWithRelations> {
     try {
       // Check if appointment exists and user has access
@@ -410,7 +410,7 @@ export class AppointmentService {
 
       // Validate status transitions
       if (updateData.status && updateData.status !== existingAppointment.status) {
-        const validTransitions: Record<AppointmentStatus, AppointmentStatus[]> = {
+        const validTransitions: Record<AppointmentStatusType, AppointmentStatusType[]> = {
           [AppointmentStatus.SCHEDULED]: [AppointmentStatus.COMPLETED, AppointmentStatus.CANCELLED],
           [AppointmentStatus.COMPLETED]: [], // Cannot change from completed
           [AppointmentStatus.CANCELLED]: [AppointmentStatus.SCHEDULED], // Can reschedule
@@ -483,7 +483,7 @@ export class AppointmentService {
   static async cancelAppointment(
     appointmentId: string,
     cancelledBy: string,
-    userRole: UserRole,
+    userRole: UserRoleType,
     reason?: string
   ): Promise<AppointmentWithRelations> {
     try {
@@ -524,7 +524,7 @@ export class AppointmentService {
     leadId: string,
     pagination: PaginationParams,
     userId: string,
-    userRole: UserRole
+    userRole: UserRoleType
   ): Promise<PaginatedResponse<AppointmentWithRelations>> {
     try {
       // Check if user has access to this lead
@@ -551,7 +551,7 @@ export class AppointmentService {
    */
   static async getUpcomingAppointments(
     userId: string,
-    userRole: UserRole,
+    userRole: UserRoleType,
     limit: number = 10
   ): Promise<AppointmentWithRelations[]> {
     try {
@@ -612,15 +612,17 @@ export class AppointmentService {
    */
   static async getAppointmentStats(
     userId: string,
-    userRole: UserRole,
+    userRole: UserRoleType,
     dateFrom?: Date,
     dateTo?: Date
   ): Promise<{
     total: number;
-    byStatus: Record<AppointmentStatus, number>;
-    upcomingCount: number;
-    completedCount: number;
-    cancelledCount: number;
+    scheduled: number;
+    completed: number;
+    cancelled: number;
+    upcomingToday: number;
+    upcomingWeek: number;
+    byStatus: Record<AppointmentStatusType, number>;
   }> {
     try {
       // Build where clause based on role
@@ -649,17 +651,16 @@ export class AppointmentService {
         _count: { status: true },
       });
 
-      // Get upcoming count
-      const upcomingCount = await prisma.appointment.count({
+      // Get scheduled count
+      const scheduled = await prisma.appointment.count({
         where: {
           ...where,
-          scheduledAt: { gte: new Date() },
           status: AppointmentStatus.SCHEDULED,
         },
       });
 
       // Get completed count
-      const completedCount = await prisma.appointment.count({
+      const completed = await prisma.appointment.count({
         where: {
           ...where,
           status: AppointmentStatus.COMPLETED,
@@ -667,30 +668,191 @@ export class AppointmentService {
       });
 
       // Get cancelled count
-      const cancelledCount = await prisma.appointment.count({
+      const cancelled = await prisma.appointment.count({
         where: {
           ...where,
           status: AppointmentStatus.CANCELLED,
         },
       });
 
+      // Get today's upcoming appointments
+      const today = new Date();
+      const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      const endOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+      
+      const upcomingToday = await prisma.appointment.count({
+        where: {
+          ...where,
+          scheduledAt: {
+            gte: startOfToday,
+            lte: endOfToday,
+          },
+          status: AppointmentStatus.SCHEDULED,
+        },
+      });
+
+      // Get this week's upcoming appointments
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay()); // Start of week (Sunday)
+      startOfWeek.setHours(0, 0, 0, 0);
+      
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6); // End of week (Saturday)
+      endOfWeek.setHours(23, 59, 59, 999);
+      
+      const upcomingWeek = await prisma.appointment.count({
+        where: {
+          ...where,
+          scheduledAt: {
+            gte: startOfWeek,
+            lte: endOfWeek,
+          },
+          status: AppointmentStatus.SCHEDULED,
+        },
+      });
+
       // Format results
-      const byStatus = Object.values(AppointmentStatus).reduce((acc, status) => {
-        acc[status] = statusCounts.find(s => s.status === status)?._count.status || 0;
-        return acc;
-      }, {} as Record<AppointmentStatus, number>);
+      const byStatus: Record<AppointmentStatusType, number> = {
+        [AppointmentStatus.SCHEDULED]: statusCounts.find(s => s.status === AppointmentStatus.SCHEDULED)?._count.status || 0,
+        [AppointmentStatus.COMPLETED]: statusCounts.find(s => s.status === AppointmentStatus.COMPLETED)?._count.status || 0,
+        [AppointmentStatus.CANCELLED]: statusCounts.find(s => s.status === AppointmentStatus.CANCELLED)?._count.status || 0,
+        [AppointmentStatus.NO_SHOW]: statusCounts.find(s => s.status === AppointmentStatus.NO_SHOW)?._count.status || 0,
+      };
 
       return {
         total,
+        scheduled,
+        completed,
+        cancelled,
+        upcomingToday,
+        upcomingWeek,
         byStatus,
-        upcomingCount,
-        completedCount,
-        cancelledCount,
       };
     } catch (error) {
       logger.error('Get appointment stats error', {
         error: error instanceof Error ? error.message : String(error),
         userId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get calendar view of appointments
+   */
+  static async getCalendarView(
+    userId: string,
+    userRole: UserRoleType,
+    year: number,
+    month: number,
+    view: 'month' | 'week' | 'day' | 'list' = 'month'
+  ): Promise<{
+    year: number;
+    month: number;
+    view: string;
+    appointments: AppointmentWithRelations[];
+    totalCount: number;
+  }> {
+    try {
+      // Build where clause based on role
+      const where: Prisma.AppointmentWhereInput = {};
+      
+      if (userRole === UserRole.SALES) {
+        where.lead = {
+          ownerId: userId,
+        };
+      }
+
+      // Calculate date range based on view
+      let startDate: Date;
+      let endDate: Date;
+      const today = new Date();
+
+      if (view === 'month') {
+        // Get full month
+        startDate = new Date(year, month - 1, 1); // month is 0-indexed
+        endDate = new Date(year, month, 0, 23, 59, 59); // Last day of month
+      } else if (view === 'week') {
+        // Get current week of the specified month
+        const currentDate = new Date(year, month - 1, today.getDate());
+        const dayOfWeek = currentDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Calculate start of week (Sunday)
+        startDate = new Date(currentDate);
+        startDate.setDate(currentDate.getDate() - dayOfWeek);
+        startDate.setHours(0, 0, 0, 0);
+        
+        // Calculate end of week (Saturday)
+        endDate = new Date(startDate);
+        endDate.setDate(startDate.getDate() + 6);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'day') {
+        // Get current day
+        startDate = new Date(year, month - 1, today.getDate());
+        startDate.setHours(0, 0, 0, 0);
+        endDate = new Date(startDate);
+        endDate.setHours(23, 59, 59, 999);
+      } else if (view === 'list') {
+        // List view: get full month like month view
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      } else {
+        // Default to month view
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0, 23, 59, 59);
+      }
+
+      // Add date range to where clause
+      where.scheduledAt = {
+        gte: startDate,
+        lte: endDate,
+      };
+
+      // Get appointments with relations
+      const appointments = await prisma.appointment.findMany({
+        where,
+        include: {
+          lead: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+              company: true,
+              status: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
+          },
+        },
+        orderBy: {
+          scheduledAt: 'asc',
+        },
+      });
+
+      // Get total count
+      const totalCount = await prisma.appointment.count({ where });
+
+      return {
+        year,
+        month,
+        view,
+        appointments: appointments as AppointmentWithRelations[],
+        totalCount,
+      };
+    } catch (error) {
+      logger.error('Get calendar view error', {
+        error: error instanceof Error ? error.message : String(error),
+        userId,
+        year,
+        month,
+        view,
       });
       throw error;
     }
