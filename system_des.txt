@@ -1,0 +1,195 @@
+
+TÀI LIỆU PHÂN TÍCH & THIẾT KẾ HỆ THỐNG - SYNERGY CRM
+=====================================================
+
+Version: 1.0
+Ngày: 25/07/2024
+Tác giả: Senior Frontend Engineer (AI)
+
+Mục lục
+---------
+1. Tổng quan
+2. Yêu cầu hệ thống
+3. Thiết kế kiến trúc
+4. Thiết kế chi tiết
+5. Triển khai và Vận hành
+6. Đánh giá và Hướng phát triển
+
+-----------------------------------------------------
+
+1. TỔNG QUAN
+------------------
+
+### 1.1. Mục tiêu
+Tài liệu này cung cấp một cái nhìn tổng quan chi tiết về kiến trúc và thiết kế của hệ thống Synergy CRM. Mục tiêu là phân tích các yêu cầu, xác định các thành phần chính, mô hình hóa dữ liệu và làm rõ luồng hoạt động của ứng dụng, phục vụ cho việc phát triển, bảo trì và mở rộng hệ thống trong tương lai.
+
+### 1.2. Phạm vi hệ thống
+Synergy CRM là một ứng dụng quản lý quan hệ khách hàng (CRM) toàn diện, tập trung vào lĩnh vực giáo dục và tuyển dụng. Hệ thống bao gồm các module chính:
+- Quản lý khách hàng tiềm năng (Leads).
+- Quản lý học viên và đào tạo.
+- Quản lý doanh nghiệp và tin tuyển dụng.
+- Bảng điều khiển (Dashboard) và báo cáo thông minh.
+- Tích hợp AI (Gemini) để nâng cao hiệu quả phân tích.
+
+### 1.3. Đối tượng người dùng và vai trò
+Hệ thống phục vụ nhiều vai trò người dùng khác nhau, mỗi vai trò có một tập hợp quyền hạn riêng biệt:
+- **Admin**: Quản trị toàn bộ hệ thống.
+- **Agent (Tư vấn viên)**: Quản lý và chăm sóc khách hàng tiềm năng.
+- **Mentor (Người hướng dẫn)**: Quản lý học viên, đội nhóm và đánh giá năng lực.
+- **Student (Học viên)**: Theo dõi tiến độ học tập, quản lý hồ sơ và ứng tuyển.
+- **Employee (Nhân viên)**: Tìm kiếm việc làm và quản lý đơn ứng tuyển.
+- **Company User (Nhà tuyển dụng)**: Đăng tin tuyển dụng, quản lý ứng viên và lịch phỏng vấn.
+- **School (Trường học)**: Theo dõi và quản lý sinh viên của trường mình.
+
+-----------------------------------------------------
+
+2. YÊU CẦU HỆ THỐNG
+--------------------
+
+### 2.1. Yêu cầu chức năng (Functional Requirements)
+- **Quản lý người dùng**: Admin có thể tạo, xem, sửa, xóa tài khoản người dùng và gán vai trò.
+- **Quản lý Leads**: Agent có thể CRUD leads, xem danh sách leads chưa được gán và nhận (claim) leads.
+- **Quản lý Học viên & Đào tạo**: Mentor/Admin/School có thể CRUD hồ sơ học viên, tạo và quản lý đội nhóm, giao và theo dõi nhiệm vụ, đánh giá kỹ năng.
+- **Quản lý Tuyển dụng**: Company User/Admin có thể CRUD tin tuyển dụng, xem danh sách ứng viên, quản lý đơn ứng tuyển, lên lịch phỏng vấn.
+- **Chức năng Học viên/Nhân viên**: Xem danh sách việc làm, nộp đơn ứng tuyển, theo dõi trạng thái đơn ứng tuyển và lịch phỏng vấn.
+- **Dashboard & Báo cáo**: Cung cấp dashboard trực quan hóa dữ liệu (KPIs, biểu đồ) phù hợp với từng vai trò.
+- **Tích hợp AI (Gemini)**:
+    - Phân tích Mô tả Công việc (JD) để trích xuất kỹ năng và yêu cầu.
+    - Chấm điểm và phân tích khách hàng tiềm năng, hồ sơ học viên.
+- **Xác thực & Phân quyền (RBAC)**: Hệ thống đăng nhập an toàn và kiểm soát truy cập dựa trên vai trò.
+- **Thông báo**: Gửi thông báo trong ứng dụng cho các sự kiện quan trọng (ví dụ: có lịch phỏng vấn mới, đơn ứng tuyển được duyệt).
+- **Đa ngôn ngữ**: Hỗ trợ giao diện tiếng Anh và tiếng Việt.
+
+### 2.2. Yêu cầu phi chức năng (Non-Functional Requirements)
+- **Hiệu năng**: Thời gian tải trang dưới 3 giây. Thời gian phản hồi API (mock) dưới 500ms.
+- **Giao diện người dùng (UI/UX)**: Giao diện hiện đại, sạch sẽ, responsive trên các thiết bị (desktop, mobile).
+- **Khả năng bảo trì**: Mã nguồn được tổ chức rõ ràng theo module, dễ đọc, dễ mở rộng.
+- **Bảo mật**: API Key được lưu trữ an toàn, không lộ ra phía client. Phân quyền chặt chẽ.
+- **Độ tin cậy**: Hoạt động ổn định, dữ liệu (trong localStorage) được lưu trữ nhất quán.
+
+-----------------------------------------------------
+
+3. THIẾT KẾ KIẾN TRÚC
+-----------------------
+
+### 3.1. Lựa chọn kiến trúc
+- **Client-Side Rendering (CSR)**: Sử dụng React để xây dựng một Single Page Application (SPA), mang lại trải nghiệm người dùng mượt mà và nhanh chóng sau lần tải đầu tiên.
+- **Kiến trúc 3 lớp (3-Tier Architecture)**:
+    1. **Presentation Layer (Frontend)**: Giao diện người dùng được xây dựng bằng React và Tailwind CSS.
+    2. **Business Logic Layer (Backend)**: Được mô phỏng hoàn toàn bằng `services/mockApi.ts`. Lớp này xử lý tất cả logic nghiệp vụ và tương tác với lớp dữ liệu.
+    3. **Data Layer (Database)**: Được mô phỏng bằng `localStorage` của trình duyệt.
+
+### 3.2. Sơ đồ kiến trúc hệ thống
+
+```
++----------------+      +-------------------------+      +-------------------------+
+|                |      |                         |      |                         |
+|   Người dùng   |----->|     Frontend (React)    |----->|     Backend (Mock API)  |
+| (Web Browser)  |      |  (SPA, Component-based) |      | (services/mockApi.ts)   |
+|                |      |                         |      |                         |
++----------------+      +-------------------------+      +-------------------------+
+                              |         ^                        |         ^
+                              |         |                        |         |
+                              v         |                        v         |
+                        +-------------------------+      +-------------------------+
+                        |  Dịch vụ bên thứ 3      |      |                         |
+                        |  (Google Gemini API)    |      |   Database (LocalStorage) |
+                        |                         |      |                         |
+                        +-------------------------+      +-------------------------+
+```
+
+### 3.3. Phân tích các thành phần
+#### 3.3.1. Frontend (Presentation Layer)
+- **Framework**: React 19.
+- **Styling**: Tailwind CSS cho việc xây dựng UI nhanh chóng và nhất quán.
+- **Routing**: `react-router-dom` để quản lý các trang và điều hướng trong SPA.
+- **State Management**: React Context API được sử dụng để quản lý trạng thái toàn cục như thông tin người dùng (`AuthContext`), giao diện (`ThemeProvider`), ngôn ngữ (`I18nProvider`), và thông báo (`ToastProvider`).
+- **UI Components**: Tự xây dựng các component UI tái sử dụng (`Button`, `Card`, `Dialog`, etc.) trong thư mục `components/ui`.
+- **Cấu trúc thư mục**:
+    - `components/`: Chứa các component UI tái sử dụng.
+    - `contexts/`: Quản lý state toàn cục.
+    - `features/`: Chứa các module chức năng lớn (acquisition, learning, enterprise, etc.), mỗi module có các trang và component riêng.
+    - `hooks/`: Chứa các custom hooks.
+    - `lib/`: Chứa các hàm tiện ích.
+    - `services/`: Chứa logic tương tác với API.
+
+#### 3.3.2. Backend (Business Logic Layer - Mock)
+- **Tệp chính**: `services/mockApi.ts`.
+- **Chức năng**:
+    - Mô phỏng các lời gọi API bất đồng bộ (sử dụng `async/await` và `delay`).
+    - Thực thi logic nghiệp vụ như tạo, đọc, cập nhật, xóa dữ liệu.
+    - Tương tác trực tiếp với lớp dữ liệu (localStorage).
+    - Tích hợp và gọi đến Google Gemini API cho các tác vụ AI.
+
+#### 3.3.3. Database (Data Layer - Mock)
+- **Công nghệ**: `localStorage` của trình duyệt web.
+- **Cơ chế**: Dữ liệu được khởi tạo từ các hằng số (`INITIAL_MOCK_...`) và được lưu vào localStorage. Các hàm `saveToStorage` và `loadFromStorage` đảm bảo dữ liệu được duy trì giữa các phiên làm việc.
+- **Các "Bảng" chính**: MOCK_USERS, MOCK_LEADS, MOCK_STUDENTS, MOCK_TEAMS, MOCK_JOBS, etc.
+
+-----------------------------------------------------
+
+4. THIẾT KẾ CHI TIẾT
+---------------------
+
+### 4.1. Thiết kế mô hình dữ liệu (Data Model)
+Các thực thể chính được định nghĩa trong `types.ts`.
+- **User**: Lưu trữ thông tin chung của tất cả người dùng, bao gồm `id`, `email`, `name`, `role`, `avatarUrl`, và các thông tin cá nhân khác.
+- **Lead**: Thông tin khách hàng tiềm năng, có các thuộc tính như `status`, `tier`, `score`, và `assignee`.
+- **Student**: Mở rộng từ `User`, thêm các thuộc tính liên quan đến học tập như `course`, `progress`, `skills`, `teamIds`, `skillMap`.
+- **Team**: Gồm `name`, `project`, `mentor`, và danh sách các `members` (là các đối tượng `Student`).
+- **JobPosting**: Thông tin tin tuyển dụng, bao gồm `title`, `companyName`, `description`, `status`.
+- **JobApplication**: Liên kết giữa `Student`/`Employee` và `JobPosting`, lưu trạng thái ứng tuyển.
+- **Interview**: Thông tin lịch phỏng vấn, liên kết `JobPosting` và ứng viên, có `scheduledTime`, `location`, `status`.
+- **Company & School**: Các thực thể riêng biệt để quản lý thông tin đối tác.
+
+*(Chi tiết các thuộc tính vui lòng tham khảo file `types.ts`)*
+
+### 4.2. Luồng người dùng chính (Key User Flows)
+
+#### 4.2.1. Luồng ứng tuyển của Học viên
+1.  **Xem việc làm**: Học viên truy cập `/enterprise/all-jobs` (`AllJobsPage`).
+2.  **Ứng tuyển**: Nhấn nút "Apply" hoặc "Quick Apply". `JobApplicationModal` hoặc `QuickApplyModal` hiện ra.
+3.  **Gửi đơn**: Học viên điền thông tin (Cover Letter, CV) và nhấn "Submit".
+4.  **Xử lý Backend (mock)**: Hàm `createJobApplication` trong `mockApi.ts` được gọi.
+    - Tạo một bản ghi `JobApplication` mới với `status: MENTOR_REVIEW`.
+    - Xác định Mentor của học viên dựa trên đội nhóm.
+    - Tạo một bản ghi `Notification` mới cho Mentor.
+5.  **Thông báo**: Mentor nhận được thông báo về đơn ứng tuyển cần duyệt.
+
+#### 4.2.2. Luồng Mentor duyệt đơn ứng tuyển
+1.  **Xem đơn**: Mentor truy cập `/learning/job-applications` (`JobApplicationsPage`).
+2.  **Duyệt/Từ chối**: Mentor xem chi tiết đơn và nhấn "Approve" hoặc "Reject".
+3.  **Xử lý Backend (mock)**: Hàm `updateJobApplicationStatus` được gọi.
+    - Cập nhật `status` của `JobApplication` thành `APPROVED` hoặc `REJECTED`.
+    - Ghi lại thông tin Mentor đã duyệt và thời gian.
+    - Nếu từ chối, lưu lại lý do.
+4.  **Thông báo**:
+    - Nếu `APPROVED`, hệ thống tạo `Notification` cho học viên và nhà tuyển dụng.
+    - Nếu `REJECTED`, hệ thống tạo `Notification` cho học viên.
+
+-----------------------------------------------------
+
+5. TRIỂN KHAI VÀ VẬN HÀNH
+---------------------------
+
+- **Triển khai**: Ứng dụng là một trang web tĩnh (static assets: HTML, CSS, JS) và có thể được triển khai trên bất kỳ dịch vụ hosting nào như Vercel, Netlify, hoặc Firebase Hosting.
+- **Biến môi trường**: `GEMINI_API_KEY` cần được cấu hình trong môi trường triển khai để ứng dụng có thể gọi API của Gemini.
+
+-----------------------------------------------------
+
+6. ĐÁNH GIÁ VÀ HƯỚNG PHÁT TRIỂN
+---------------------------------
+
+### 6.1. Hạn chế của kiến trúc hiện tại
+- **Mock API & LocalStorage**: Giải pháp hiện tại không phù hợp cho môi trường production vì dữ liệu chỉ tồn tại trên trình duyệt của người dùng, không thể chia sẻ và không có tính bền vững.
+- **Phân quyền phía Client**: Việc kiểm soát quyền truy cập hoàn toàn ở frontend là không an toàn. Bất kỳ người dùng nào có kiến thức kỹ thuật đều có thể vượt qua.
+- **Thiếu cập nhật thời gian thực**: Người dùng cần phải làm mới trang để thấy dữ liệu mới (ví dụ: khi một Agent khác claim lead).
+
+### 6.2. Hướng phát triển trong tương lai
+- **Xây dựng Backend thực sự**: Sử dụng Node.js (Express/NestJS) hoặc Python (Django/FastAPI) để xây dựng một API server hoàn chỉnh.
+- **Sử dụng Cơ sở dữ liệu thực**: Chuyển đổi từ `localStorage` sang một hệ quản trị CSDL như PostgreSQL (quan hệ) hoặc MongoDB (NoSQL).
+- **Triển khai Real-time**: Tích hợp WebSockets (sử dụng thư viện như Socket.io) để cập nhật dữ liệu trực tiếp trên giao diện người dùng.
+- **Chuyển logic phân quyền về Backend**: Mọi yêu cầu từ client phải được xác thực và phân quyền ở phía server trước khi xử lý.
+- **Tối ưu hóa**: Cải thiện hiệu năng bằng cách sử dụng caching, lazy loading cho các component.
+- **Kiểm thử**: Viết unit test và integration test để đảm bảo chất lượng và sự ổn định của hệ thống.
+```
