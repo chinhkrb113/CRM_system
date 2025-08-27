@@ -1,0 +1,46 @@
+
+Synergy CRM Demo Accounts
+
+Password for all accounts: Passw0rd!
+
+---
+
+Role: ADMIN
+Email: admin@example.com
+Access: All pages. Full control.
+
+---
+
+Role: AGENT (Tư vấn)
+Email: agent@example.com
+Access: Dashboard, Leads.
+
+---
+
+Role: MENTOR
+Email: mentor@example.com
+Access: Dashboard, Students, Teams, JD Parser.
+
+---
+
+Role: STUDENT
+Email: student@example.com
+Access: Students list, own profile, Teams.
+
+---
+
+Role: EMPLOYEE
+Email: employee@example.com
+Access: All Jobs, My Applications, My Interviews.
+
+---
+
+Role: COMPANY_USER (Nhà tuyển dụng)
+Email: company@example.com
+Access: Job Management, Applications.
+
+---
+
+Role: SCHOOL
+Email: school@example.com
+Access: Dashboard, Students (for their school).

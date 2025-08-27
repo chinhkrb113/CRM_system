@@ -1,0 +1,5 @@
+{
+  "name": "Synergy CRM",
+  "description": "A powerful CRM dashboard for managing leads, student profiles, and enterprise integrations, featuring data visualization and a Gemini-powered job description parser.",
+  "requestFramePermissions": []
+}

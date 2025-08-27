@@ -1,26 +1,28 @@
 {
-  "name": "crm-system",
-  "version": "1.0.0",
-  "description": "CRM System Monorepo",
+  "name": "copy-of-synergy-crm",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "turbo run dev",
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "clean": "turbo run clean"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/genai": "latest",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.539.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router-dom": "^6.25.1",
+    "recharts": "^2.15.4",
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
-    "turbo": "^1.10.0",
-    "typescript": "^5.0.0",
-    "@types/node": "^20.0.0"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
+    "@types/node": "^22.14.0",
+    "@types/react": "^19.1.10",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
   }
 }
