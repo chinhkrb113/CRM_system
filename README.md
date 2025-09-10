@@ -39,7 +39,7 @@ Tất cả các yêu cầu từ Client (Web, Mobile) đều đi qua một API Ga
 | :--- | :--- |
 | **Frontend** | `React.JS` |
 | **Backend** | `Node.JS` |
-| **Database** | `MongoDB` |
+| **Database** | `MySQL` |
 | **AI / ML** | `Python`, `Scikit-learn` (Random Forest Classifier), `TensorFlow/PyTorch` (Recommendation System) |
 | **Kiến trúc** | `Microservices`, `Domain-Driven Design (DDD)`, `RESTful API` |
 
@@ -56,7 +56,7 @@ Tất cả các yêu cầu từ Client (Web, Mobile) đều đi qua một API Ga
 
 -   Node.js (v16.x trở lên)
 -   npm / yarn
--   MongoDB
+-   MySQL
 -   Docker (Khuyến khích)
 
 ### Hướng dẫn cài đặt
@@ -79,7 +79,7 @@ Tất cả các yêu cầu từ Client (Web, Mobile) đều đi qua một API Ga
     ```
 
 3.  **Cấu hình biến môi trường:**
-    Tạo file `.env` trong thư mục gốc của mỗi service từ file `.env.example` và cấu hình các thông tin cần thiết (VD: `MONGO_URI`, `PORT`, `JWT_SECRET`).
+    Tạo file `.env` trong thư mục gốc của mỗi service từ file `.env.example` và cấu hình các thông tin cần thiết (VD: `PORT`, `JWT_SECRET`).
 
 4.  **Chạy các services:**
     Bạn có thể chạy từng service trên các terminal khác nhau.
